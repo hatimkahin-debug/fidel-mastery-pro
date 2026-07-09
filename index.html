@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Fidel Mastery">
+<meta name="theme-color" content="#14100c">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Fidel Mastery Pro</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic:wght@400;500;700;900&family=Inter:wght@400;500;600;700;800&display=swap');
+
+  :root{
+    --bg: #14100c; --bg2: #1c1510; --card: #221a13; --ink: #f1e4c8;
+    --gold: #d4a24e; --gold-soft: rgba(212,162,78,0.15);
+    --red: #9c3a2a; --dim: #9c8a70; --dim2: #4d4132;
+    --success: #4caf7d; --danger: #c0524a;
+    --ease: cubic-bezier(0.36,0.66,0.04,1);
+    --safe-top: env(safe-area-inset-top); --safe-bottom: env(safe-area-inset-bottom);
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; margin:0; padding:0; }
+  html,body{ height:100%; overscroll-behavior:none; }
+  body{
+    background: radial-gradient(ellipse at 50% 0%, var(--bg2), var(--bg) 65%);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+    overflow:hidden;
+  }
+  .amh{ font-family:'Noto Sans Ethiopic', sans-serif; }
+  button, select, input{ font-family: inherit; }
+  .tap:active{ transform: scale(0.94); }
+  .tap{ transition: transform .12s var(--ease); }
+
+  #app{ height:100vh; height:100dvh; display:flex; flex-direction:column; }
+  #screens{ flex:1; position:relative; min-height:0; }
+  .screen{
+    position:absolute; inset:0; overflow-y:auto; -webkit-overflow-scrolling:touch;
+    opacity:0; pointer-events:none; transform: translateY(10px);
+    transition: opacity .25s var(--ease), transform .3s var(--ease);
+    padding-top: calc(var(--safe-top) + 10px);
+  }
+  .screen.active{ opacity:1; pointer-events:auto; transform:none; }
+
+  /* ---------- Tab bar ---------- */
+  #tabbar{
+    display:flex; backdrop-filter: blur(20px) saturate(1.4);
+    background: rgba(20,16,12,0.78);
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding: 6px 4px calc(6px + var(--safe-bottom));
+    z-index: 60;
+  }
+  .tab-btn{
+    flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;
+    background:none; border:none; color: var(--dim); font-size:10px; font-weight:600;
+    padding:6px 2px; letter-spacing:0.2px;
+  }
+  .tab-btn .ic{ font-size:20px; line-height:1; }
+  .tab-btn.active{ color: var(--gold); }
+
+  /* ---------- Shared headers ---------- */
+  .hd{ padding: 4px 18px 14px; }
+  .hd h1{ font-size:22px; font-weight:800; letter-spacing:-0.3px; }
+  .hd p{ font-size:12px; color:var(--dim); margin-top:2px; }
+
+  /* ---------- Segmented control ---------- */
+  .segwrap{ padding: 0 16px 10px; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .segwrap::-webkit-scrollbar{ display:none; }
+  .seg{ display:inline-flex; background: var(--card); border-radius: 12px; padding:3px; gap:2px; }
+  .seg button{
+    border:none; background:none; color:var(--dim); font-size:12px; font-weight:600;
+    padding:7px 12px; border-radius:9px; white-space:nowrap;
+  }
+  .seg button.active{ background: var(--gold); color: #221a13; }
+
+  /* ---------- Study screen ---------- */
+  #orderStrip{ display:flex; align-items:flex-start; justify-content:center; gap: clamp(4px,2vw,20px); padding:6px 10px; }
+  .ord{ display:flex; flex-direction:column; align-items:center; opacity:.35; transition:opacity .25s,transform .25s; min-width:32px; }
+  .ord .oc{ font-size: clamp(15px,4vw,24px); }
+  .ord .op{ font-size: clamp(7px,1.8vw,10px); color:var(--dim); margin-top:1px; }
+  .ord.active{ opacity:1; transform:scale(1.2); }
+  .ord.active .oc{ color:var(--gold); }
+  .ord.active .op{ color:var(--ink); font-weight:700; }
+  .ord.active::after{ content:''; display:block; width:60%; height:2px; background:var(--red); margin-top:3px; border-radius:2px; }
+
+  #studyMid{ display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 6px 0; }
+  #bigLetter{
+    font-size: min(42vw,36vh); font-weight:700; line-height:1; opacity:0; transform:scale(.9);
+    transition: opacity .25s var(--ease), transform .32s var(--ease);
+    text-shadow: 0 0 50px rgba(212,162,78,0.18);
+  }
+  #bigLetter.show{ opacity:1; transform:scale(1); }
+  #revealHint{ font-size:12px; color:var(--dim); margin-top:6px; display:none; }
+  .flashcard #revealHint{ display:block; }
+  .flashcard .hideFC{ visibility:hidden; }
+
+  #wordCard{ text-align:center; padding: 6px 20px 4px; }
+  #wChars{ font-size: clamp(20px,5.4vw,30px); font-weight:600; }
+  #wPhon{ font-size: clamp(11px,2.8vw,14px); color:var(--gold); font-style:italic; margin-top:3px; }
+  #wMean{ font-size: clamp(10px,2.4vw,12px); color:var(--dim); text-transform:uppercase; letter-spacing:1.2px; margin-top:4px; }
+
+  .iconRow{ display:flex; justify-content:center; gap:14px; padding: 10px 0 4px; }
+  .iconBtn{
+    width:40px; height:40px; border-radius:50%; border:1px solid var(--dim2);
+    background: var(--card); color:var(--ink); font-size:16px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .iconBtn.on{ background: var(--gold); color:#221a13; border-color:var(--gold); }
+
+  #studyControls{ display:flex; align-items:center; justify-content:center; gap:12px; padding: 4px 0 18px; }
+  #studyControls .hbtn{
+    width:44px; height:44px; border-radius:50%; border:1px solid var(--dim2); background:var(--card);
+    color:var(--ink); font-size:16px; display:flex; align-items:center; justify-content:center;
+  }
+  #speedBtn{ width:auto; padding:0 14px; border-radius:20px; font-size:12px; font-weight:700; }
+  #progressBarWrap{ height:3px; background: rgba(255,255,255,0.06); margin: 0 16px; border-radius:2px; }
+  #progressBarFill{ height:100%; background:var(--gold); width:0%; border-radius:2px; transition:width .15s linear; }
+  #cornerInfo{ text-align:center; font-size:10px; color:var(--dim); letter-spacing:1.5px; text-transform:uppercase; margin: 6px 0 2px; }
+
+  /* ---------- Quiz screen ---------- */
+  #quizLetter{ font-size: min(34vw,28vh); font-weight:700; text-align:center; margin: 10px 0 6px; }
+  .quizOptions{ display:grid; grid-template-columns:1fr 1fr; gap:10px; padding: 6px 20px; }
+  .quizOpt{
+    background:var(--card); border:1px solid var(--dim2); border-radius:14px; padding:16px 8px;
+    color:var(--ink); font-size:16px; font-weight:600; text-align:center;
+  }
+  .quizOpt.correct{ background: var(--success); border-color:var(--success); color:#0d1f16; }
+  .quizOpt.wrong{ background: var(--danger); border-color:var(--danger); color:#2a0d0a; }
+  .quizOpt.dim{ opacity:.4; }
+  #quizStats{ text-align:center; font-size:12px; color:var(--dim); padding: 4px 0 10px; }
+  #quizNextBtn{
+    display:block; margin: 14px auto 0; background:var(--gold); color:#221a13; border:none;
+    padding:12px 28px; border-radius:20px; font-weight:700; font-size:14px;
+  }
+
+  /* ---------- Search screen ---------- */
+  #searchInput{
+    margin: 0 16px 12px; padding: 12px 14px; border-radius:12px; border:1px solid var(--dim2);
+    background: var(--card); color:var(--ink); font-size:15px; width: calc(100% - 32px);
+  }
+  #searchInput::placeholder{ color:var(--dim); }
+  .resultRow{
+    display:flex; align-items:center; gap:12px; padding: 10px 16px; border-bottom:1px solid rgba(255,255,255,0.05);
+  }
+  .resultRow .rc{ font-size:26px; width:40px; text-align:center; }
+  .resultRow .ri{ flex:1; min-width:0; }
+  .resultRow .ri .rp{ font-size:13px; font-weight:600; }
+  .resultRow .ri .rw{ font-size:11px; color:var(--dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .resultRow .rstar{ font-size:16px; color:var(--dim2); background:none; border:none; padding:6px; }
+  .resultRow .rstar.on{ color:var(--gold); }
+  .emptyState{ text-align:center; color:var(--dim); font-size:13px; padding: 40px 20px; }
+
+  /* ---------- Progress screen ---------- */
+  .statGrid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; padding: 4px 16px; }
+  .statCard{ background:var(--card); border-radius:16px; padding:14px; }
+  .statCard .sv{ font-size:24px; font-weight:800; color:var(--gold); }
+  .statCard .sl{ font-size:11px; color:var(--dim); margin-top:2px; text-transform:uppercase; letter-spacing:1px; }
+  .catRow{ padding: 10px 16px; }
+  .catRow .cl{ display:flex; justify-content:space-between; font-size:12px; color:var(--dim); margin-bottom:5px; }
+  .catBar{ height:8px; background:rgba(255,255,255,0.06); border-radius:5px; overflow:hidden; }
+  .catBarFill{ height:100%; background:var(--gold); border-radius:5px; transition:width .4s var(--ease); }
+  #resetBtn{
+    display:block; margin: 20px auto 30px; background:none; color:var(--danger); border:1px solid var(--danger);
+    padding:10px 22px; border-radius:16px; font-size:13px; font-weight:600;
+  }
+
+  /* ---------- Intro ---------- */
+  #intro{
+    position:fixed; inset:0; z-index:100; background:var(--bg);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px;
+  }
+  #intro .fw{ font-size: clamp(50px,15vw,120px); font-weight:700; letter-spacing:3px; margin-bottom:6px; }
+  #intro h1{ font-size:13px; font-weight:600; letter-spacing:3px; text-transform:uppercase; color:var(--dim); margin-bottom:28px; }
+  #introStart{
+    background: var(--gold); color:#221a13; border:none; padding:16px 40px; border-radius:999px;
+    font-size:15px; font-weight:700; letter-spacing:0.5px;
+  }
+  #intro p{ font-size:11px; color:var(--dim); max-width:300px; line-height:1.6; margin-top:18px; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div id="screens">
+
+    <!-- STUDY -->
+    <section class="screen active" id="screen-study">
+      <div class="hd"><h1>Study</h1><p>All 231 forms · 33 letters × 7 vowel orders</p></div>
+      <div class="segwrap"><div class="seg" id="filterSeg">
+        <button data-f="all" class="active">All 231</button>
+        <button data-f="base">Basic (ha, ma, sa…)</button>
+        <button data-f="lookalike">Lookalikes</button>
+        <button data-f="arabic">Arabic Equiv.</button>
+        <button data-f="favorites">★ Favorites</button>
+      </div></div>
+
+      <div id="orderStrip" class="hideFC"></div>
+
+      <div id="studyMid">
+        <div id="bigLetter" class="amh tap"></div>
+        <div id="revealHint">Tap the letter to reveal</div>
+        <div class="iconRow hideFC">
+          <button class="iconBtn tap" id="favBtn">☆</button>
+          <button class="iconBtn tap" id="masterBtn">✓</button>
+        </div>
+      </div>
+
+      <div id="wordCard" class="hideFC">
+        <div id="wChars" class="amh"></div>
+        <div id="wPhon"></div>
+        <div id="wMean"></div>
+      </div>
+
+      <div id="cornerInfo"></div>
+      <div id="progressBarWrap"><div id="progressBarFill"></div></div>
+      <div id="studyControls">
+        <button class="hbtn tap" id="prevBtn">◀</button>
+        <button class="hbtn tap" id="playBtn">❚❚</button>
+        <button class="hbtn tap" id="nextBtn">▶</button>
+        <button class="hbtn tap" id="speedBtn">1×</button>
+        <label class="iconBtn tap" id="fcToggleLabel" style="cursor:pointer;">🎴</label>
+      </div>
+    </section>
+
+    <!-- QUIZ -->
+    <section class="screen" id="screen-quiz">
+      <div class="hd"><h1>Quiz</h1><p>Pick the sound that matches the letter</p></div>
+      <div id="quizLetter" class="amh"></div>
+      <div class="quizOptions" id="quizOptions"></div>
+      <div id="quizStats"></div>
+      <button id="quizNextBtn" class="tap" style="display:none;">Next Letter →</button>
+    </section>
+
+    <!-- SEARCH -->
+    <section class="screen" id="screen-search">
+      <div class="hd"><h1>Search</h1><p>By sound, Amharic letter, or word meaning</p></div>
+      <input id="searchInput" type="search" placeholder="Try “ha”, “ge”, “coffee”, ወ…" autocapitalize="off" autocorrect="off">
+      <div id="searchResults"></div>
+    </section>
+
+    <!-- FAVORITES -->
+    <section class="screen" id="screen-favorites">
+      <div class="hd"><h1>Favorites</h1><p>Letters you've starred</p></div>
+      <div id="favResults"></div>
+    </section>
+
+    <!-- PROGRESS -->
+    <section class="screen" id="screen-progress">
+      <div class="hd"><h1>Progress</h1><p>Your study stats</p></div>
+      <div class="statGrid">
+        <div class="statCard"><div class="sv" id="statMastered">0</div><div class="sl">Mastered</div></div>
+        <div class="statCard"><div class="sv" id="statFav">0</div><div class="sl">Favorites</div></div>
+        <div class="statCard"><div class="sv" id="statQuiz">0%</div><div class="sl">Quiz Accuracy</div></div>
+        <div class="statCard"><div class="sv" id="statStreak">0</div><div class="sl">Day Streak</div></div>
+      </div>
+      <div style="height:8px;"></div>
+      <div class="catRow" style="background:var(--card); margin:0 16px; border-radius:14px; padding:14px;">
+        <div class="cl" style="margin-bottom:8px;"><span style="font-weight:700; color:var(--ink);">Audio Settings</span></div>
+        <div id="cloudStatus" style="font-size:11px; color:var(--dim); margin-bottom:8px;">Cloud TTS: not configured</div>
+        <input id="cloudKeyInput" type="password" placeholder="Paste your Google Cloud API key" autocapitalize="off" autocorrect="off"
+          style="width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--dim2); background:var(--bg); color:var(--ink); font-size:13px; margin-bottom:8px;">
+        <div style="display:flex; gap:8px;">
+          <button id="cloudSaveBtn" class="tap" style="flex:1; background:var(--gold); color:#221a13; border:none; padding:10px; border-radius:10px; font-weight:700; font-size:12px;">Save Key</button>
+          <button id="cloudClearBtn" class="tap" style="flex:1; background:none; color:var(--danger); border:1px solid var(--danger); padding:10px; border-radius:10px; font-weight:700; font-size:12px;">Clear</button>
+        </div>
+        <div style="font-size:10px; color:var(--dim); margin-top:8px; line-height:1.5;">
+          Gives real Amharic (am-ET) voices via Google Cloud Text-to-Speech — free for the first 1M characters/month.
+          Get a key at console.cloud.google.com → enable "Text-to-Speech API" → Credentials → API Key. Stored only on this device.
+        </div>
+      </div>
+      <div style="height:8px;"></div>
+      <div class="catRow"><div class="cl"><span>All 231</span><span id="catAllTxt">0/231</span></div><div class="catBar"><div class="catBarFill" id="catAllBar"></div></div></div>
+      <div class="catRow"><div class="cl"><span>Basic 33</span><span id="catBaseTxt">0/33</span></div><div class="catBar"><div class="catBarFill" id="catBaseBar"></div></div></div>
+      <div class="catRow"><div class="cl"><span>Lookalikes</span><span id="catLookTxt">0</span></div><div class="catBar"><div class="catBarFill" id="catLookBar"></div></div></div>
+      <div class="catRow"><div class="cl"><span>Arabic Equivalents</span><span id="catArabTxt">0</span></div><div class="catBar"><div class="catBarFill" id="catArabBar"></div></div></div>
+      <button id="resetBtn" class="tap">Reset All Progress</button>
+    </section>
+
+  </div>
+
+  <div id="tabbar">
+    <button class="tab-btn active tap" data-tab="study"><span class="ic">🔤</span>Study</button>
+    <button class="tab-btn tap" data-tab="quiz"><span class="ic">🎯</span>Quiz</button>
+    <button class="tab-btn tap" data-tab="search"><span class="ic">🔍</span>Search</button>
+    <button class="tab-btn tap" data-tab="favorites"><span class="ic">★</span>Favorites</button>
+    <button class="tab-btn tap" data-tab="progress"><span class="ic">📊</span>Progress</button>
+  </div>
+</div>
+
+<div id="intro">
+  <div class="fw amh">ፊደል</div>
+  <h1>Fidel Mastery Pro</h1>
+  <button id="introStart" class="tap">Begin</button>
+  <p>All 231 Amharic Fidel forms, with flashcards, quizzes, search, favorites, and progress tracking. Audio prefers real recordings, then falls back automatically.</p>
+</div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

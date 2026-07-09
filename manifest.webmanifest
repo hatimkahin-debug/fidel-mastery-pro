@@ -1,0 +1,9 @@
+{
+  "name": "Fidel Mastery Pro",
+  "short_name": "Fidel",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#14100c",
+  "theme_color": "#14100c",
+  "orientation": "portrait"
+}
