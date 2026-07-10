@@ -395,20 +395,28 @@ FIDEL_ROWS.forEach(function(row, rowIdx){
   function playChar(ch, fallbackText){
     stopAll();
     const myToken = token;
+    // Speak immediately and synchronously within the tap itself — this is
+    // what actually satisfies iOS Safari's requirement that speech be
+    // directly tied to a user gesture, rather than fired later from an
+    // async callback (which is what broke it before: waiting for Google's
+    // audio to fail first, then speaking, was too disconnected from the tap).
+    speakDevice(fallbackText, myToken);
+    // Try to upgrade to nicer audio in the background; if it arrives and
+    // actually starts playing, cut the placeholder speech short in its favor.
     const cloudKey = getSharedCloudKey();
-    function tryGoogleThenDevice(){
-      playGoogleTrick(ch, fallbackText, myToken, function(ok){
-        if (myToken!==token) return;
-        if (!ok) speakDevice(fallbackText, myToken);
+    function tryUpgrade(playFn){
+      playFn(ch, cloudKey, myToken, function(ok){
+        if (myToken !== token || !ok) return;
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
       });
     }
     if (cloudKey){
-      playCloudTTS(ch, cloudKey, myToken, function(ok){
-        if (myToken!==token) return;
-        if (!ok) tryGoogleThenDevice();
-      });
+      tryUpgrade(function(ch, key, tok, cb){ playCloudTTS(ch, key, tok, cb); });
     } else {
-      tryGoogleThenDevice();
+      playGoogleTrick(ch, fallbackText, myToken, function(ok){
+        if (myToken !== token || !ok) return;
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
+      });
     }
   }
 
