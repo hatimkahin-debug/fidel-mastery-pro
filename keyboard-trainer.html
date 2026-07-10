@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Fidel Keyboard Trainer</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic:wght@400;700;900&family=Inter:wght@400;500;600;700;800&display=swap');
+  :root{
+    --bg:#14100c; --bg2:#1c1510; --card:#221a13; --ink:#f1e4c8; --gold:#d4a24e;
+    --dim:#9c8a70; --dim2:#4d4132; --success:#4caf7d;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html,body{ height:100%; }
+  body{
+    background: radial-gradient(ellipse at 50% 0%, var(--bg2), var(--bg) 65%);
+    color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;
+    overflow-x:hidden;
+  }
+  .amh{ font-family:'Noto Sans Ethiopic', sans-serif; }
+  #wrap{ max-width:520px; margin:0 auto; padding: 16px 10px calc(16px + env(safe-area-inset-bottom)); }
+  h1{ font-size:18px; font-weight:800; padding: 0 6px 2px; }
+  .sub{ font-size:12px; color:var(--dim); padding: 0 6px 14px; line-height:1.6; }
+  .sub b{ color:var(--ink); }
+
+  .kbRow{ display:flex; justify-content:center; gap:4px; margin-bottom:5px; }
+  .key{
+    flex:1; max-width:56px; aspect-ratio: 1/1.05; background:var(--card); border:1px solid var(--dim2);
+    border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    position:relative; padding:2px;
+  }
+  .key .amhBig{ font-size: clamp(16px,5.5vw,22px); line-height:1; }
+  .key .qw{ position:absolute; top:2px; left:5px; font-size:8px; color:var(--dim); font-weight:700; }
+  .key.active{ border-color:var(--gold); background: rgba(212,162,78,0.12); }
+  .key.unmapped{ opacity:0.3; }
+
+  #familyPanel{
+    display:none; background:var(--card); border-radius:20px; padding:24px 16px; margin-top:16px;
+  }
+  #familyPanel.show{ display:block; }
+  #familyTitle{ font-size:16px; color:var(--gold); font-weight:800; letter-spacing:0.5px; margin-bottom:16px; text-align:center; }
+  #familyStrip{ display:flex; justify-content:center; gap: clamp(6px,2vw,14px); flex-wrap:wrap; }
+  .formBtn{
+    display:flex; flex-direction:column; align-items:center; gap:6px; background:var(--bg);
+    border:1px solid var(--dim2); border-radius:16px; padding:16px 10px; min-width:68px;
+  }
+  .formBtn .fc{ font-size:40px; line-height:1; }
+  .formBtn .fp{ font-size:13px; color:var(--dim); font-weight:600; }
+  .formBtn .fi{ font-size:14px; color:var(--dim2); margin-top:2px; }
+  .formBtn.playing{ border-color:var(--gold); background: rgba(212,162,78,0.15); }
+  .formBtn.playing .fp{ color:var(--gold); }
+  .formBtn.playing .fi{ color:var(--gold); }
+  @keyframes pulse{ 0%,100%{ opacity:0.5; } 50%{ opacity:1; } }
+  .formBtn.playing .fi{ animation: pulse 0.8s ease-in-out infinite; }
+
+  #note{ font-size:11px; color:var(--dim); text-align:center; margin-top:14px; line-height:1.6; padding: 0 10px; }
+  #note b{ color:var(--gold); }
+
+  #lookupSection{ margin-top:22px; padding: 0 4px; }
+  #lookupSection h2{ font-size:15px; font-weight:800; margin-bottom:4px; }
+  #lookupSub{ font-size:11px; color:var(--dim); margin-bottom:10px; line-height:1.5; }
+  #wordInput{
+    width:100%; padding:14px 16px; border-radius:14px; border:1px solid var(--dim2);
+    background:var(--card); color:var(--ink); font-size:20px; margin-bottom:10px;
+  }
+  #wordInput.amh{ font-family:'Noto Sans Ethiopic', sans-serif; }
+  #lookupBtn{
+    width:100%; background:var(--gold); color:#221a13; border:none; padding:13px; border-radius:14px;
+    font-weight:800; font-size:14px; margin-bottom:12px;
+  }
+  #resultCard{ display:none; background:var(--card); border-radius:16px; padding:16px; }
+  #resultCard.show{ display:block; }
+  .resultRow2{ display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.06); }
+  .resultRow2:last-child{ border-bottom:none; }
+  .resultRow2 .rlbl{ font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:1px; }
+  .resultRow2 .rval{ font-size:16px; font-weight:600; text-align:right; }
+  #suggestBox{ display:none; margin-top:10px; padding:12px; background:rgba(212,162,78,0.1); border:1px solid var(--gold); border-radius:12px; font-size:13px; }
+  #suggestBox.show{ display:block; }
+  #suggestBox b{ color:var(--gold); }
+  #lookupStatus{ font-size:11px; color:var(--dim); text-align:center; margin-top:8px; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h1>Fidel Keyboard Trainer</h1>
+  <div class="sub">Tap a key to see and hear its <b>whole family</b> — 7 vowel forms. This covers you whether your real keyboard's default tap shows the 1st-order or 6th-order form, since a few keys on your photo showed the 6th-order (e.g. E→እ, T→ት) rather than the more common 1st-order default.</div>
+
+  <div id="keyboard"></div>
+  <div id="familyPanel">
+    <div id="familyTitle">FAMILY</div>
+    <div id="familyStrip"></div>
+  </div>
+
+  <div id="note">Greyed-out keys (X, C, V, and several others) either aren't part of the core 33-letter Fidel, or are usually reached via <b>Shift</b> or a <b>long-press</b> on a related key rather than their own dedicated key — explore your real keyboard's long-press menus to find them.</div>
+
+  <div id="lookupSection">
+    <h2>Word Lookup</h2>
+    <div id="lookupSub">Type a word in <b>Amharic, English, or Arabic</b> — shows translation into the other two. Detects the script automatically.</div>
+    <input id="wordInput" type="text" placeholder="ሰላም, hello, or سلام…">
+    <button id="lookupBtn">Translate</button>
+    <div id="resultCard">
+      <div class="resultRow2"><span class="rlbl">Amharic</span><span class="rval amh" id="resAm"></span></div>
+      <div class="resultRow2"><span class="rlbl">English</span><span class="rval" id="resEn"></span></div>
+      <div class="resultRow2"><span class="rlbl">Arabic</span><span class="rval" id="resAr" dir="rtl"></span></div>
+    </div>
+    <div id="suggestBox"></div>
+    <div id="lookupStatus"></div>
+  </div>
+</div>
+
+<script>
+// data.js — the full Amharic Fidel dataset for Fidel Mastery Pro.
+// Each row = one consonant family with its 7 vowel-order forms.
+//   base   : romanized consonant root, used to build the fallback phonetic
+//   type   : study category — "standard" | "lookalike" | "arabic"
+//            ("arabic" flags sounds that map closely onto a distinct Arabic
+//            letter — useful if you already read Arabic and are leaning on
+//            that for pronunciation, e.g. ቀ~ق, ሐ~ح, ጠ~ط, ጸ~ص)
+//   words  : one real example word per exact vowel-order form, or null
+//            where I don't have a confidently-known common word for that
+//            exact syllable (shown honestly in the UI rather than guessed).
+const VOWEL_ORDER = ["1st","2nd","3rd","4th","5th","6th","7th"];
+const PHON_SUFFIX = ["ä","u","i","a","ē","ə","o"];   // for the order-strip labels
+const TTS_SUFFIX  = ["uh","oo","ee","ah","ay","ih","oh"]; // for the device-voice fallback only
+
+const FIDEL_ROWS = [
+  { chars:["ሀ","ሁ","ሂ","ሃ","ሄ","ህ","ሆ"], base:"h", name:"Hä", type:"arabic", words:[
+    {aw:"ሀገር",ph:"hagär",en:"country"},{aw:"ሁለት",ph:"hulet",en:"two"},
+    {aw:"ሂሳብ",ph:"hisab",en:"math / bill"},{aw:"ሃሳብ",ph:"hasab",en:"idea"},
+    {aw:"ሄደ",ph:"hede",en:"he went"},{aw:"ህይወት",ph:"hiywet",en:"life"},
+    {aw:"ሆድ",ph:"hod",en:"stomach"} ] },
+  { chars:["ለ","ሉ","ሊ","ላ","ሌ","ል","ሎ"], base:"l", name:"Lä", type:"standard", words:[
+    {aw:"ለምን",ph:"lemin",en:"why"},{aw:"ሉሲ",ph:"Lusi",en:"Lucy (fossil found in Ethiopia)"},
+    {aw:"ሊጥ",ph:"lit",en:"dough"},{aw:"ላም",ph:"lam",en:"cow"},
+    {aw:"ሌባ",ph:"leba",en:"thief"},{aw:"ልጅ",ph:"lij",en:"child"},
+    {aw:"ሎሚ",ph:"lomi",en:"lemon / orange"} ] },
+  { chars:["ሐ","ሑ","ሒ","ሓ","ሔ","ሕ","ሖ"], base:"h", name:"Ḥä", type:"arabic", words:[
+    {aw:"ሐምሌ",ph:"hamle",en:"July (month)"},{aw:"ትሑት",ph:"tihut",en:"humble"},
+    null, null, null,
+    {aw:"ሕግ",ph:"hig",en:"law"}, null ] },
+  { chars:["መ","ሙ","ሚ","ማ","ሜ","ም","ሞ"], base:"m", name:"Mä", type:"standard", words:[
+    {aw:"መጽሐፍ",ph:"metsihaf",en:"book"},{aw:"ሙዚቃ",ph:"muzika",en:"music"},
+    {aw:"ሚስት",ph:"mist",en:"wife"},{aw:"ማር",ph:"mar",en:"honey"},
+    {aw:"ሜዳ",ph:"meda",en:"field"},{aw:"ምግብ",ph:"migib",en:"food"},
+    {aw:"ሞት",ph:"mot",en:"death"} ] },
+  { chars:["ሠ","ሡ","ሢ","ሣ","ሤ","ሥ","ሦ"], base:"s", name:"Śä", type:"lookalike", words:[
+    {aw:"ሠራ",ph:"sera",en:"he worked"}, null, null,
+    {aw:"ሣር",ph:"sar",en:"grass"}, null,
+    {aw:"ሥራ",ph:"sira",en:"work"}, null ] },
+  { chars:["ረ","ሩ","ሪ","ራ","ሬ","ር","ሮ"], base:"r", name:"Rä", type:"standard", words:[
+    {aw:"ረዥም",ph:"rezhim",en:"tall / long"},{aw:"ሩዝ",ph:"ruz",en:"rice"},
+    {aw:"ሪፖርት",ph:"report",en:"report"},{aw:"ራስ",ph:"ras",en:"head"},
+    {aw:"ገበሬ",ph:"gebäré",en:"farmer"},{aw:"ርዝመት",ph:"rizmet",en:"length"},
+    {aw:"ሮጠ",ph:"rot'e",en:"he ran"} ] },
+  { chars:["ሰ","ሱ","ሲ","ሳ","ሴ","ስ","ሶ"], base:"s", name:"Sä", type:"lookalike", words:[
+    {aw:"ሰላም",ph:"selam",en:"peace / hello"},{aw:"ሱቅ",ph:"suq",en:"shop"},
+    {aw:"ሲኒማ",ph:"sinema",en:"cinema"},{aw:"ሳምንት",ph:"samint",en:"week"},
+    {aw:"ሴት",ph:"set",en:"woman"},{aw:"ስም",ph:"sim",en:"name"},
+    {aw:"ሶስት",ph:"sost",en:"three"} ] },
+  { chars:["ሸ","ሹ","ሺ","ሻ","ሼ","ሽ","ሾ"], base:"sh", name:"Shä", type:"lookalike", words:[
+    {aw:"ሸማ",ph:"shema",en:"woven cloth"},{aw:"ሹራብ",ph:"shurab",en:"sweater"},
+    {aw:"ሺህ",ph:"shih",en:"thousand"},{aw:"ሻይ",ph:"shai",en:"tea"},
+    null, {aw:"ሽንኩርት",ph:"shinkurt",en:"onion"},
+    {aw:"ሾላ",ph:"shola",en:"sycamore fig tree"} ] },
+  { chars:["ቀ","ቁ","ቂ","ቃ","ቄ","ቅ","ቆ"], base:"q", name:"Qä", type:"arabic", words:[
+    {aw:"ቀን",ph:"qän",en:"day"},{aw:"ቁጥር",ph:"qutir",en:"number"},
+    {aw:"ቂም",ph:"qim",en:"grudge"},{aw:"ቃል",ph:"qal",en:"word / promise"},
+    {aw:"ቄስ",ph:"qes",en:"priest"},{aw:"ቅጠል",ph:"qit'el",en:"leaf"},
+    {aw:"ቆዳ",ph:"qoda",en:"skin / leather"} ] },
+  { chars:["በ","ቡ","ቢ","ባ","ቤ","ብ","ቦ"], base:"b", name:"Bä", type:"lookalike", words:[
+    {aw:"በር",ph:"bär",en:"door"},{aw:"ቡና",ph:"buna",en:"coffee"},
+    {aw:"ቢራ",ph:"bira",en:"beer"},{aw:"ባህር",ph:"bahir",en:"sea"},
+    {aw:"ቤት",ph:"bet",en:"house"},{aw:"ብር",ph:"bir",en:"Ethiopian currency"},
+    {aw:"ቦታ",ph:"bota",en:"place"} ] },
+  { chars:["ተ","ቱ","ቲ","ታ","ቴ","ት","ቶ"], base:"t", name:"Tä", type:"lookalike", words:[
+    {aw:"ተማሪ",ph:"temari",en:"student"},{aw:"ቱሪስት",ph:"turist",en:"tourist"},
+    {aw:"ቲማቲም",ph:"timatim",en:"tomato"},{aw:"ታሪክ",ph:"tarik",en:"history"},
+    {aw:"ቴሌቪዥን",ph:"televizhin",en:"television"},{aw:"ትምህርት",ph:"timhirt",en:"education"},
+    {aw:"ቶሎ",ph:"tolo",en:"quickly"} ] },
+  { chars:["ቸ","ቹ","ቺ","ቻ","ቼ","ች","ቾ"], base:"ch", name:"Chä", type:"lookalike", words:[
+    {aw:"ቸርነት",ph:"chernet",en:"kindness"}, null, null,
+    {aw:"ቻይና",ph:"China",en:"China"},{aw:"ቼክ",ph:"chek",en:"cheque"},
+    {aw:"ችግር",ph:"chiggir",en:"problem"}, null ] },
+  { chars:["ኀ","ኁ","ኂ","ኃ","ኄ","ኅ","ኆ"], base:"h", name:"Ḫä", type:"arabic", words:[
+    null, null, null,
+    {aw:"ኃይል",ph:"hayl",en:"power / strength"}, null,
+    {aw:"ኅሊና",ph:"hilina",en:"conscience"}, null ] },
+  { chars:["ነ","ኑ","ኒ","ና","ኔ","ን","ኖ"], base:"n", name:"Nä", type:"standard", words:[
+    {aw:"ነገ",ph:"nege",en:"tomorrow"},{aw:"ኑሮ",ph:"nuro",en:"life / livelihood"},
+    null, {aw:"ና",ph:"na",en:"come! (command)"}, null,
+    {aw:"ንጉሥ",ph:"nigus",en:"king"},{aw:"ኖረ",ph:"nore",en:"he lived"} ] },
+  { chars:["ኘ","ኙ","ኚ","ኛ","ኜ","ኝ","ኞ"], base:"ny", name:"Nyä", type:"standard", words:[
+    null, null, null,
+    {aw:"ተኛ",ph:"tegna",en:"lie down / sleep"}, null, null, null ] },
+  { chars:["አ","ኡ","ኢ","ኣ","ኤ","እ","ኦ"], base:"", name:"Ä", type:"arabic", words:[
+    {aw:"አበባ",ph:"abeba",en:"flower"},{aw:"ኡደት",ph:"udet",en:"cycle / orbit"},
+    {aw:"ኢትዮጵያ",ph:"Ityop'ya",en:"Ethiopia"}, null,
+    {aw:"ኤርትራ",ph:"Eritira",en:"Eritrea"},{aw:"እኔ",ph:"ine",en:"I / me"},
+    {aw:"ኦሮሚያ",ph:"Oromiya",en:"Oromia (region)"} ] },
+  { chars:["ከ","ኩ","ኪ","ካ","ኬ","ክ","ኮ"], base:"k", name:"Kä", type:"standard", words:[
+    {aw:"ከተማ",ph:"ketema",en:"city"},{aw:"ኩባያ",ph:"kubaya",en:"cup"},
+    {aw:"ኪስ",ph:"kis",en:"pocket"},{aw:"ካርታ",ph:"karta",en:"map"},
+    {aw:"ኬክ",ph:"kek",en:"cake"},{aw:"ክብር",ph:"kibir",en:"honor"},
+    {aw:"ኮረብታ",ph:"korebta",en:"hill"} ] },
+  { chars:["ኸ","ኹ","ኺ","ኻ","ኼ","ኽ","ኾ"], base:"k", name:"Khä", type:"arabic", words:[
+    null,null,null,null,null,null,null ] },
+  { chars:["ወ","ዉ","ዊ","ዋ","ዌ","ው","ዎ"], base:"w", name:"Wä", type:"standard", words:[
+    {aw:"ወንድም",ph:"wändim",en:"brother"}, null,
+    {aw:"ኪዊ",ph:"kiwi",en:"kiwi (fruit)"},{aw:"ዋና",ph:"wana",en:"main / swimming"},
+    null, {aw:"ውሃ",ph:"wiha",en:"water"}, null ] },
+  { chars:["ዐ","ዑ","ዒ","ዓ","ዔ","ዕ","ዖ"], base:"", name:"ʿÄ", type:"arabic", words:[
+    null, null, null,
+    {aw:"ዓመት",ph:"amet",en:"year"}, null,
+    {aw:"ዕቃ",ph:"iqa",en:"item / goods"}, null ] },
+  { chars:["ዘ","ዙ","ዚ","ዛ","ዜ","ዝ","ዞ"], base:"z", name:"Zä", type:"standard", words:[
+    {aw:"ዘመድ",ph:"zämäd",en:"relative"},{aw:"ዙሪያ",ph:"zuriya",en:"surroundings"},
+    {aw:"ዚምባብዌ",ph:"Zimbabwe",en:"Zimbabwe"},{aw:"ዛፍ",ph:"zaf",en:"tree"},
+    {aw:"ዜና",ph:"zena",en:"news"},{aw:"ዝናብ",ph:"zinab",en:"rain"},
+    {aw:"ዞረ",ph:"zore",en:"he turned around"} ] },
+  { chars:["ዠ","ዡ","ዢ","ዣ","ዤ","ዥ","ዦ"], base:"zh", name:"Zhä", type:"standard", words:[
+    null,null,null,null,null,null,null ] },
+  { chars:["የ","ዩ","ዪ","ያ","ዬ","ይ","ዮ"], base:"y", name:"Yä", type:"standard", words:[
+    {aw:"የካቲት",ph:"yekatit",en:"February (month)"},{aw:"ዩኒቨርሲቲ",ph:"university",en:"university"},
+    null, {aw:"ገበያ",ph:"gebeya",en:"market"}, null,
+    {aw:"ይቅርታ",ph:"yiqirta",en:"sorry / excuse me"},{aw:"ዮሐንስ",ph:"Yohannes",en:"John (name)"} ] },
+  { chars:["ደ","ዱ","ዲ","ዳ","ዴ","ድ","ዶ"], base:"d", name:"Dä", type:"standard", words:[
+    {aw:"ደብተር",ph:"debtär",en:"notebook"},{aw:"ዱባ",ph:"duba",en:"pumpkin / cucumber"},
+    {aw:"ዲያቆን",ph:"diyaqon",en:"deacon"},{aw:"ዳቦ",ph:"dabo",en:"bread"},
+    null, {aw:"ድምጽ",ph:"dimts",en:"voice / sound"},{aw:"ዶሮ",ph:"doro",en:"chicken"} ] },
+  { chars:["ጀ","ጁ","ጂ","ጃ","ጄ","ጅ","ጆ"], base:"j", name:"Jä", type:"standard", words:[
+    {aw:"ጀግና",ph:"jegna",en:"hero"},{aw:"ጁስ",ph:"jus",en:"juice"},
+    {aw:"ጂኦግራፊ",ph:"jiografi",en:"geography"},{aw:"ጃኬት",ph:"jaket",en:"jacket"},
+    null, {aw:"ጅብ",ph:"jib",en:"hyena"},{aw:"ጆሮ",ph:"joro",en:"ear"} ] },
+  { chars:["ገ","ጉ","ጊ","ጋ","ጌ","ግ","ጎ"], base:"g", name:"Gä", type:"standard", words:[
+    {aw:"ገንዘብ",ph:"genzeb",en:"money"},{aw:"ጉዞ",ph:"guzo",en:"journey"},
+    {aw:"ጊዜ",ph:"gize",en:"time"},{aw:"ጋዜጣ",ph:"gazeta",en:"newspaper"},
+    {aw:"ጌጥ",ph:"get",en:"ornament"},{aw:"ግንብ",ph:"ginb",en:"wall"},
+    {aw:"ጎማ",ph:"goma",en:"tire / rubber"} ] },
+  { chars:["ጠ","ጡ","ጢ","ጣ","ጤ","ጥ","ጦ"], base:"t'", name:"Ṭä", type:"arabic", words:[
+    {aw:"ጠረጴዛ",ph:"t'ereppeza",en:"table"},{aw:"ጡት",ph:"t'ut",en:"breast"},
+    {aw:"ጢስ",ph:"t'is",en:"smoke"},{aw:"ጣሊያን",ph:"T'aliyan",en:"Italy"},
+    {aw:"ጤና",ph:"t'ena",en:"health"},{aw:"ጥርስ",ph:"t'irs",en:"tooth"},
+    {aw:"ጦር",ph:"t'or",en:"spear"} ] },
+  { chars:["ጨ","ጩ","ጪ","ጫ","ጬ","ጭ","ጮ"], base:"ch'", name:"Chʼä", type:"standard", words:[
+    {aw:"ጨው",ph:"ch'ew",en:"salt"},{aw:"ጩኸት",ph:"ch'uhet",en:"shout / scream"},
+    null, {aw:"ጫማ",ph:"ch'ama",en:"shoe"}, null,
+    {aw:"ጭንቅላት",ph:"ch'inqilat",en:"head / brain"},{aw:"ጮኸ",ph:"ch'ohe",en:"he shouted"} ] },
+  { chars:["ጰ","ጱ","ጲ","ጳ","ጴ","ጵ","ጶ"], base:"p'", name:"Pʼä", type:"lookalike", words:[
+    null, null, null,
+    {aw:"ጳጳስ",ph:"p'ap'as",en:"bishop"},{aw:"ጴጥሮስ",ph:"P'et'ros",en:"Peter (name)"},
+    null, null ] },
+  { chars:["ጸ","ጹ","ጺ","ጻ","ጼ","ጽ","ጾ"], base:"ts", name:"Tsä", type:"arabic", words:[
+    {aw:"ጸሐይ",ph:"tsähay",en:"sun"}, null,
+    {aw:"ጺም",ph:"tsim",en:"beard"},{aw:"ጻድቅ",ph:"tsadiq",en:"righteous one"},
+    null, {aw:"ጽሑፍ",ph:"tsihuf",en:"writing / text"},{aw:"ጾም",ph:"tsom",en:"fasting"} ] },
+  { chars:["ፀ","ፁ","ፂ","ፃ","ፄ","ፅ","ፆ"], base:"ts", name:"Tsʼä", type:"arabic", words:[
+    {aw:"ፀሐይ",ph:"tsähay",en:"sun (alt. spelling)"}, null, null, null, null,
+    {aw:"ፅሑፍ",ph:"tsihuf",en:"writing (alt. spelling)"},{aw:"ፆም",ph:"tsom",en:"fasting (alt. spelling)"} ] },
+  { chars:["ፈ","ፉ","ፊ","ፋ","ፌ","ፍ","ፎ"], base:"f", name:"Fä", type:"standard", words:[
+    {aw:"ፈረስ",ph:"feres",en:"horse"},{aw:"ፉርኖ",ph:"furno",en:"bakery / oven"},
+    {aw:"ፊት",ph:"fit",en:"face"},{aw:"ፋሲካ",ph:"fasika",en:"Easter"},
+    {aw:"ፌስታል",ph:"festal",en:"plastic bag"},{aw:"ፍቅር",ph:"fikir",en:"love"},
+    {aw:"ፎቶ",ph:"foto",en:"photo"} ] },
+  { chars:["ፐ","ፑ","ፒ","ፓ","ፔ","ፕ","ፖ"], base:"p", name:"Pä", type:"standard", words:[
+    null, null,
+    {aw:"ፒያኖ",ph:"piyano",en:"piano"},{aw:"ፓስታ",ph:"pasta",en:"pasta"},
+    null, {aw:"ፕሬዚዳንት",ph:"prezidant",en:"president"},{aw:"ፖሊስ",ph:"polis",en:"police"} ] }
+];
+
+// Flat list of all 231 forms, each with a stable id ("{rowIdx}_{orderIdx}")
+// used for favorites/mastery storage and for the audio-file naming scheme.
+const FIDEL_DECK = [];
+FIDEL_ROWS.forEach(function(row, rowIdx){
+  row.chars.forEach(function(ch, orderIdx){
+    FIDEL_DECK.push({
+      id: rowIdx + '_' + orderIdx,
+      char: ch, rowIdx: rowIdx, orderIdx: orderIdx,
+      phon: row.base + PHON_SUFFIX[orderIdx],
+      ttsFallback: row.base + TTS_SUFFIX[orderIdx],
+      type: row.type,
+      word: row.words[orderIdx] || null
+    });
+  });
+});
+
+</script>
+<script>
+(function(){
+  // Which QWERTY key opens which FIDEL_ROWS family (by rowIdx). "V" for vowels
+  // points every vowel key at the same shared vowel row (15 = Ä), since on a
+  // real keyboard A/E/I/O/U just select a different vowel-order form of that
+  // one row rather than being separate consonant families.
+  const KEY_MAP = {
+    Q:8, W:18, E:15, R:5, T:10, Y:22, U:15, I:15, O:15, P:32,
+    A:15, S:6, D:23, F:31, G:25, H:0, J:24, K:16, L:1,
+    Z:20, X:17, C:11, V:null, B:9, N:13, M:3
+  };
+  const rows = [
+    ['Q','W','E','R','T','Y','U','I','O','P'],
+    ['A','S','D','F','G','H','J','K','L'],
+    ['Z','X','C','V','B','N','M']
+  ];
+
+  const kb = document.getElementById('keyboard');
+  rows.forEach(function(rowKeys){
+    const rowEl = document.createElement('div');
+    rowEl.className = 'kbRow';
+    rowKeys.forEach(function(k){
+      const rowIdx = KEY_MAP[k];
+      const btn = document.createElement('button');
+      btn.className = 'key' + (rowIdx==null ? ' unmapped' : '');
+      const bigChar = rowIdx!=null ? FIDEL_ROWS[rowIdx].chars[0] : '—';
+      btn.innerHTML = '<span class="qw">'+k+'</span><span class="amhBig amh">'+bigChar+'</span>';
+      if (rowIdx != null){
+        btn.addEventListener('click', function(){ openFamily(rowIdx, k, btn); });
+      }
+      rowEl.appendChild(btn);
+    });
+    kb.appendChild(rowEl);
+  });
+
+  const familyPanel = document.getElementById('familyPanel');
+  const familyTitle = document.getElementById('familyTitle');
+  const familyStrip = document.getElementById('familyStrip');
+
+  // ---- lightweight audio: Cloud TTS (if a key was already saved by the main
+  // app, sharing localStorage on the same origin) -> Google's translate
+  // trick -> device voice ----
+  let currentAudio = null, token = 0;
+  function stopAll(){ token++; if (currentAudio){ try{currentAudio.pause();}catch(e){} } if (window.speechSynthesis) speechSynthesis.cancel(); }
+  function getSharedCloudKey(){
+    try{
+      const raw = localStorage.getItem('fidelMasteryPro.v1');
+      if (!raw) return '';
+      const data = JSON.parse(raw);
+      return data.cloudApiKey || '';
+    }catch(e){ return ''; }
+  }
+  function speakDevice(text, myToken){
+    if (!window.speechSynthesis) return;
+    const u = new SpeechSynthesisUtterance(text); u.lang='en-US'; u.rate=0.85;
+    speechSynthesis.speak(u);
+  }
+  function playGoogleTrick(ch, fallbackText, myToken, onDone){
+    const url = 'https://translate.google.com/translate_tts?ie=UTF-8&q=' + encodeURIComponent(ch) + '&tl=am&client=tw-ob';
+    const audio = new Audio(); currentAudio = audio;
+    let started = false, done = false;
+    function finish(ok){ if (done) return; done=true; clearTimeout(watchdog); if (myToken!==token) return; onDone(ok); }
+    const watchdog = setTimeout(()=>{ if(!started) finish(false); }, 1100);
+    audio.addEventListener('playing', ()=>{ started=true; clearTimeout(watchdog); });
+    audio.addEventListener('ended', ()=> finish(true));
+    audio.addEventListener('error', ()=> finish(false));
+    audio.src = url;
+    const p = audio.play();
+    if (p && p.catch) p.catch(()=>finish(false));
+  }
+  function playCloudTTS(ch, apiKey, myToken, onDone){
+    fetch('https://texttospeech.googleapis.com/v1/text:synthesize?key=' + encodeURIComponent(apiKey), {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ input:{text:ch}, voice:{languageCode:'am-ET'}, audioConfig:{audioEncoding:'MP3'} })
+    }).then(r => r.ok ? r.json() : null).then(function(json){
+      if (myToken !== token) return;
+      if (!json || !json.audioContent){ onDone(false); return; }
+      const audio = new Audio('data:audio/mp3;base64,'+json.audioContent);
+      currentAudio = audio;
+      audio.addEventListener('ended', ()=>{ if (myToken===token) onDone(true); });
+      audio.addEventListener('error', ()=>{ if (myToken===token) onDone(false); });
+      const p = audio.play();
+      if (p && p.catch) p.catch(()=>{ if (myToken===token) onDone(false); });
+    }).catch(()=>{ if (myToken===token) onDone(false); });
+  }
+  function playChar(ch, fallbackText){
+    stopAll();
+    const myToken = token;
+    const cloudKey = getSharedCloudKey();
+    function tryGoogleThenDevice(){
+      playGoogleTrick(ch, fallbackText, myToken, function(ok){
+        if (myToken!==token) return;
+        if (!ok) speakDevice(fallbackText, myToken);
+      });
+    }
+    if (cloudKey){
+      playCloudTTS(ch, cloudKey, myToken, function(ok){
+        if (myToken!==token) return;
+        if (!ok) tryGoogleThenDevice();
+      });
+    } else {
+      tryGoogleThenDevice();
+    }
+  }
+
+  function openFamily(rowIdx, key, btnEl){
+    document.querySelectorAll('.key').forEach(b => b.classList.remove('active'));
+    btnEl.classList.add('active');
+    const row = FIDEL_ROWS[rowIdx];
+    familyTitle.textContent = row.name + ' family — key ' + key;
+    familyStrip.innerHTML = '';
+    row.chars.forEach(function(ch, i){
+      const b = document.createElement('button');
+      b.className = 'formBtn';
+      const phon = row.base + PHON_SUFFIX[i];
+      b.innerHTML = '<span class="fc amh">'+ch+'</span><span class="fp">'+phon+'</span><span class="fi">\u{1F50A}</span>';
+      b.addEventListener('click', function(){
+        document.querySelectorAll('.formBtn').forEach(x=>x.classList.remove('playing'));
+        b.classList.add('playing');
+        playChar(ch, row.base + TTS_SUFFIX[i]);
+      });
+      familyStrip.appendChild(b);
+    });
+    familyPanel.classList.add('show');
+    // auto-play the first form so tapping a key gives immediate feedback
+    familyStrip.querySelector('.formBtn').click();
+  }
+
+  /* =========================================================
+     WORD LOOKUP — script detection, live translation, fuzzy match
+     ========================================================= */
+  // Build a local known-word list from the app's own example words
+  // (163 real, human-checked Amharic words with English glosses) —
+  // used only for "closest known word" suggestions, not as a full
+  // dictionary. Translation itself comes from Google's public
+  // translate endpoint (the same unofficial trick used for audio
+  // elsewhere in this project — not a documented API, can be
+  // rate-limited or change without notice).
+  const KNOWN_WORDS = [];
+  FIDEL_ROWS.forEach(function(row){
+    row.words.forEach(function(w){
+      if (w) KNOWN_WORDS.push(w); // {aw, ph, en}
+    });
+  });
+
+  function detectScript(text){
+    if (/[\u1200-\u137F]/.test(text)) return 'am';
+    if (/[\u0600-\u06FF]/.test(text)) return 'ar';
+    return 'en';
+  }
+
+  function levenshtein(a, b){
+    const m = a.length, n = b.length;
+    const d = Array.from({length:m+1}, (_,i) => [i].concat(Array(n).fill(0)));
+    for (let j=0;j<=n;j++) d[0][j]=j;
+    for (let i=1;i<=m;i++){
+      for (let j=1;j<=n;j++){
+        d[i][j] = a[i-1]===b[j-1] ? d[i-1][j-1]
+          : 1 + Math.min(d[i-1][j], d[i][j-1], d[i-1][j-1]);
+      }
+    }
+    return d[m][n];
+  }
+
+  function closestKnownWord(input){
+    let best = null, bestDist = Infinity;
+    KNOWN_WORDS.forEach(function(w){
+      const dist = levenshtein(input, w.aw);
+      if (dist < bestDist){ bestDist = dist; best = w; }
+    });
+    if (!best) return null;
+    // only suggest if reasonably close (not wildly different) and not an exact match
+    const threshold = Math.max(1, Math.floor(best.aw.length * 0.4));
+    if (bestDist > 0 && bestDist <= threshold) return { word: best, dist: bestDist };
+    return null;
+  }
+
+  async function googleTranslate(text, sourceLang, targetLang){
+    const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl='+sourceLang+'&tl='+targetLang+'&dt=t&q='+encodeURIComponent(text);
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('translate request failed');
+    const data = await resp.json();
+    // response shape: [[["translated text","original text",...]], ...]
+    return data[0].map(seg => seg[0]).join('');
+  }
+
+  const wordInput = document.getElementById('wordInput');
+  const lookupBtn = document.getElementById('lookupBtn');
+  const resultCard = document.getElementById('resultCard');
+  const resAm = document.getElementById('resAm');
+  const resEn = document.getElementById('resEn');
+  const resAr = document.getElementById('resAr');
+  const suggestBox = document.getElementById('suggestBox');
+  const lookupStatus = document.getElementById('lookupStatus');
+
+  wordInput.addEventListener('input', function(){
+    wordInput.classList.toggle('amh', detectScript(wordInput.value) === 'am');
+  });
+
+  async function runLookup(){
+    const text = wordInput.value.trim();
+    if (!text) return;
+    resultCard.classList.remove('show');
+    suggestBox.classList.remove('show');
+    lookupStatus.textContent = 'Translating…';
+
+    const script = detectScript(text);
+    try{
+      if (script === 'am'){
+        const [en, ar] = await Promise.all([
+          googleTranslate(text, 'am', 'en'),
+          googleTranslate(text, 'am', 'ar')
+        ]);
+        resAm.textContent = text; resEn.textContent = en; resAr.textContent = ar;
+      } else if (script === 'ar'){
+        const [am, en] = await Promise.all([
+          googleTranslate(text, 'ar', 'am'),
+          googleTranslate(text, 'ar', 'en')
+        ]);
+        resAm.textContent = am; resEn.textContent = en; resAr.textContent = text;
+      } else {
+        const [am, ar] = await Promise.all([
+          googleTranslate(text, 'en', 'am'),
+          googleTranslate(text, 'en', 'ar')
+        ]);
+        resAm.textContent = am; resEn.textContent = text; resAr.textContent = ar;
+      }
+      resultCard.classList.add('show');
+      lookupStatus.textContent = '';
+    }catch(err){
+      lookupStatus.textContent = "Translation request failed (" + err.message + "). If you're viewing this inside an app's built-in preview, try opening the file directly in Safari instead — some in-app browsers block this kind of request even though audio/images load fine.";
+    }
+
+    // Local fuzzy-match suggestion, only meaningful for Amharic input,
+    // and only against the ~163 example words already in this app —
+    // not a full dictionary, so plenty of valid words won't get a hit here.
+    if (script === 'am'){
+      const suggestion = closestKnownWord(text);
+      if (suggestion){
+        suggestBox.innerHTML = 'Did you mean <b class="amh">' + suggestion.word.aw + '</b> ("' + suggestion.word.ph + '" — ' + suggestion.word.en + ')? '
+          + '<span style="color:var(--dim);">(closest match among this app\u2019s ~163 known example words, not a full dictionary check)</span>';
+        suggestBox.classList.add('show');
+      }
+    }
+  }
+  lookupBtn.addEventListener('click', runLookup);
+  wordInput.addEventListener('keydown', function(e){ if (e.key === 'Enter') runLookup(); });
+})();
+</script>
+</body>
+</html>
