@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Fidel Tracing Pad - Complete</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic:wght@700;900&family=Baloo+2:wght@600;800&display=swap');
+  
+  :root {
+    --bg: #f8f9fa;
+    --card: #ffffff;
+    --text: #2d3748;
+    --guide: #e2e8f0;
+    --btn-bg: #edf2f7;
+    --gold: #d4a24e;
+  }
+  
+  * { box-sizing: border-box; margin: 0; padding: 0; touch-action: none; }
+  
+  body {
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: 'Baloo 2', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px 10px;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 15px;
+  }
+
+  .header h1 {
+    font-size: 26px;
+    color: #2b6cb0;
+    margin-bottom: 5px;
+  }
+
+  .header p {
+    font-size: 14px;
+    color: #4a5568;
+    max-width: 400px;
+    line-height: 1.4;
+  }
+
+  .board-container {
+    background: var(--card);
+    padding: 15px;
+    border-radius: 24px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 400px;
+    position: relative;
+  }
+
+  .top-controls {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  select {
+    padding: 8px 12px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: 2px solid #cbd5e0;
+    background: #fff;
+    font-family: 'Noto Sans Ethiopic', sans-serif;
+    color: #2d3748;
+    font-weight: bold;
+    outline: none;
+  }
+
+  .sound-btn {
+    background: #ebf8ff;
+    color: #3182ce;
+    border: 2px solid #3182ce;
+    padding: 8px 16px;
+    border-radius: 12px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 2px 4px rgba(49, 130, 206, 0.2);
+  }
+  
+  .sound-btn:active {
+    transform: scale(0.95);
+    background: #3182ce;
+    color: #fff;
+  }
+
+  canvas {
+    background-color: #ffffff;
+    border: 4px dashed #cbd5e0;
+    border-radius: 16px;
+    cursor: crosshair;
+    width: 100%;
+    max-width: 320px;
+    height: 320px;
+    font-family: 'Noto Sans Ethiopic', sans-serif;
+  }
+
+  .controls {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 320px;
+    margin-top: 15px;
+    align-items: center;
+  }
+
+  .nav-btn {
+    background: var(--btn-bg);
+    border: none;
+    font-size: 24px;
+    color: #2b6cb0;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  }
+
+  .nav-btn:active { transform: translateY(2px); }
+
+  .clear-btn {
+    background: #fc8181;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 18px;
+    border-radius: 12px;
+    font-weight: bold;
+    font-family: 'Baloo 2', sans-serif;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(252, 129, 129, 0.3);
+  }
+
+  .clear-btn:active { transform: translateY(2px); }
+
+  .palette {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  .color-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  }
+
+  .color-btn.active {
+    border-color: #2d3748;
+    transform: scale(1.1);
+  }
+
+  .order-indicator {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #718096;
+    font-weight: bold;
+  }
+
+</style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>Amharic Tracing Pad</h1>
+    <p>All 231 letters! Tap the speaker to hear the sound while tracing.</p>
+    <p style="font-size: 11px; color: #a0aec0; margin-top: 4px;">Uses the Noto Sans Ethiopic font, loaded automatically.</p>
+  </div>
+
+  <div class="board-container">
+    <div class="top-controls">
+      <select id="familySelect" aria-label="Select Letter Family"></select>
+      <button class="sound-btn" id="soundBtn">🔊 Play</button>
+    </div>
+
+    <canvas id="drawingCanvas" width="320" height="320"></canvas>
+    
+    <div class="controls">
+      <button class="nav-btn" id="prevBtn">&#8592;</button>
+      <button class="clear-btn" id="clearBtn">Erase</button>
+      <button class="nav-btn" id="nextBtn">&#8594;</button>
+    </div>
+    <div class="order-indicator" id="orderIndicator">Order: 1st (Base)</div>
+  </div>
+
+  <div class="palette">
+    <button class="color-btn active" style="background-color: #e53e3e;" data-color="#e53e3e"></button>
+    <button class="color-btn" style="background-color: #3182ce;" data-color="#3182ce"></button>
+    <button class="color-btn" style="background-color: #38a169;" data-color="#38a169"></button>
+    <button class="color-btn" style="background-color: #d69e2e;" data-color="#d69e2e"></button>
+    <button class="color-btn" style="background-color: #2d3748;" data-color="#2d3748"></button>
+  </div>
+
+<script>
+  const fidelGroups = [
+    ["ሀ", "ሁ", "ሂ", "ሃ", "ሄ", "ህ", "ሆ"],
+    ["ለ", "ሉ", "ሊ", "ላ", "ሌ", "ል", "ሎ"],
+    ["ሐ", "ሑ", "ሒ", "ሓ", "ሔ", "ሕ", "ሖ"],
+    ["መ", "ሙ", "ሚ", "ማ", "ሜ", "ም", "ሞ"],
+    ["ሠ", "ሡ", "ሢ", "ሣ", "ሤ", "ሥ", "ሦ"],
+    ["ረ", "ሩ", "ሪ", "ራ", "ሬ", "ር", "ሮ"],
+    ["ሰ", "ሱ", "ሲ", "ሳ", "ሴ", "ስ", "ሶ"],
+    ["ሸ", "ሹ", "ሺ", "ሻ", "ሼ", "ሽ", "ሾ"],
+    ["ቀ", "ቁ", "ቂ", "ቃ", "ቄ", "ቅ", "ቆ"],
+    ["በ", "ቡ", "ቢ", "ባ", "ቤ", "ብ", "ቦ"],
+    ["ተ", "ቱ", "ቲ", "ታ", "ቴ", "ት", "ቶ"],
+    ["ቸ", "ቹ", "ቺ", "ቻ", "ቼ", "ች", "ቾ"],
+    ["ኀ", "ኁ", "ኂ", "ኃ", "ኄ", "ኅ", "ኆ"],
+    ["ነ", "ኑ", "ኒ", "ና", "ኔ", "ን", "ኖ"],
+    ["ኘ", "ኙ", "ኚ", "ኛ", "ኜ", "ኝ", "ኞ"],
+    ["አ", "ኡ", "ኢ", "ኣ", "ኤ", "እ", "ኦ"],
+    ["ከ", "ኩ", "ኪ", "ካ", "ኬ", "ክ", "ኮ"],
+    ["ኸ", "ኹ", "ኺ", "ኻ", "ኼ", "ኽ", "ኾ"],
+    ["ወ", "ዉ", "ዊ", "ዋ", "ዌ", "ው", "ዎ"],
+    ["ዐ", "ዑ", "ዒ", "ዓ", "ዔ", "ዕ", "ዖ"],
+    ["ዘ", "ዙ", "ዚ", "ዛ", "ዜ", "ዝ", "ዞ"],
+    ["ዠ", "ዡ", "ዢ", "ዣ", "ዤ", "ዥ", "ዦ"],
+    ["የ", "ዩ", "ዪ", "ያ", "ዬ", "ይ", "ዮ"],
+    ["ደ", "ዱ", "ዲ", "ዳ", "ዴ", "ድ", "ዶ"],
+    ["ጀ", "ጁ", "ጂ", "ጃ", "ጄ", "ጅ", "ጆ"],
+    ["ገ", "ጉ", "ጊ", "ጋ", "ጌ", "ግ", "ጎ"],
+    ["ጠ", "ጡ", "ጢ", "ጣ", "ጤ", "ጥ", "ጦ"],
+    ["ጨ", "ጩ", "ጪ", "ጫ", "ጬ", "ጭ", "ጮ"],
+    ["ጰ", "ጱ", "ጲ", "ጳ", "ጴ", "ጵ", "ጶ"],
+    ["ጸ", "ጹ", "ጺ", "ጻ", "ጼ", "ጽ", "ጾ"],
+    ["ፀ", "ፁ", "ፂ", "ፃ", "ፄ", "ፅ", "ፆ"],
+    ["ፈ", "ፉ", "ፊ", "ፋ", "ፌ", "ፍ", "ፎ"],
+    ["ፐ", "ፑ", "ፒ", "ፓ", "ፔ", "ፕ", "ፖ"]
+  ];
+
+  const allLetters = fidelGroups.flat();
+  let currentIndex = 0;
+  
+  const canvas = document.getElementById('drawingCanvas');
+  const ctx = canvas.getContext('2d');
+  const orderIndicator = document.getElementById('orderIndicator');
+  const familySelect = document.getElementById('familySelect');
+  
+  let isDrawing = false;
+  let currentColor = '#e53e3e';
+  
+  const orderNames = ["1st (Ge'ez)", "2nd (Ka'eb)", "3rd (Salis)", "4th (Rabi)", "5th (Hamis)", "6th (Sadis)", "7th (Sabi)"];
+
+  fidelGroups.forEach((group, index) => {
+    const option = document.createElement('option');
+    option.value = index * 7;
+    option.text = `Family ${group[0]}`;
+    familySelect.appendChild(option);
+  });
+
+  familySelect.addEventListener('change', (e) => {
+    currentIndex = parseInt(e.target.value);
+    drawBackgroundLetter();
+  });
+
+  function resizeCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+    drawBackgroundLetter();
+  }
+
+  function drawBackgroundLetter() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.font = "200px 'Noto Sans Ethiopic', sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "#e2e8f0";
+    ctx.fillText(allLetters[currentIndex], canvas.width / 2, canvas.height / 2 + 10);
+    
+    const orderIndex = currentIndex % 7;
+    orderIndicator.textContent = `Order: ${orderNames[orderIndex]}`;
+    
+    const familyBaseIndex = currentIndex - orderIndex;
+    familySelect.value = familyBaseIndex;
+  }
+
+  // ---- Audio: Cloud TTS (shared key from Fidel Mastery Pro, if saved) ->
+  // Google's translate trick -> clear failure message (no English-voice
+  // fallback, since it reads the wrong sound entirely).
+  let currentAudio = null, audioToken = 0;
+
+  function stopAudio(){
+    audioToken++;
+    if (currentAudio){ try{ currentAudio.pause(); }catch(e){} }
+  }
+
+  function getSharedCloudKey(){
+    try{
+      const raw = localStorage.getItem('fidelMasteryPro.v1');
+      if (!raw) return '';
+      return (JSON.parse(raw).cloudApiKey) || '';
+    }catch(e){ return ''; }
+  }
+
+  function tryAudioURL(url, myToken, onDone){
+    const audio = new Audio();
+    currentAudio = audio;
+    let started = false, done = false;
+    function finish(ok){
+      if (done) return; done = true; clearTimeout(watchdog);
+      if (myToken !== audioToken) return;
+      onDone(ok);
+    }
+    const watchdog = setTimeout(function(){ if (!started) finish(false); }, 1200);
+    audio.addEventListener('playing', function(){ started = true; clearTimeout(watchdog); });
+    audio.addEventListener('ended', function(){ finish(true); });
+    audio.addEventListener('error', function(){ finish(false); });
+    audio.src = url;
+    const p = audio.play();
+    if (p && p.catch) p.catch(function(){ finish(false); });
+  }
+
+  function playCloudTTS(text, apiKey, myToken, onDone){
+    fetch('https://texttospeech.googleapis.com/v1/text:synthesize?key=' + encodeURIComponent(apiKey), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ input:{text:text}, voice:{languageCode:'am-ET'}, audioConfig:{audioEncoding:'MP3'} })
+    }).then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(json){
+        if (myToken !== audioToken) return;
+        if (!json || !json.audioContent){ onDone(false); return; }
+        const audio = new Audio('data:audio/mp3;base64,' + json.audioContent);
+        currentAudio = audio;
+        audio.addEventListener('ended', function(){ if (myToken === audioToken) onDone(true); });
+        audio.addEventListener('error', function(){ if (myToken === audioToken) onDone(false); });
+        const p = audio.play();
+        if (p && p.catch) p.catch(function(){ if (myToken === audioToken) onDone(false); });
+      }).catch(function(){ if (myToken === audioToken) onDone(false); });
+  }
+
+  function showAudioFailure(){
+    const btn = document.getElementById('soundBtn');
+    const original = btn.textContent;
+    btn.textContent = '\u26A0\uFE0F No audio right now';
+    btn.style.background = '#fed7d7';
+    setTimeout(function(){
+      btn.textContent = original;
+      btn.style.background = '';
+    }, 2000);
+  }
+
+  function playLetterAudio() {
+    stopAudio();
+    const myToken = audioToken;
+    const letter = allLetters[currentIndex];
+    // Same id scheme as the main app: rowIdx_orderIdx, e.g. "0_0" for ሀ
+    const rowIdx = Math.floor(currentIndex / 7);
+    const orderIdx = currentIndex % 7;
+    const id = rowIdx + '_' + orderIdx;
+
+    function tryGoogleTrick(){
+      const url = 'https://translate.google.com/translate_tts?ie=UTF-8&q=' + encodeURIComponent(letter) + '&tl=am&client=tw-ob';
+      tryAudioURL(url, myToken, function(ok){
+        if (myToken !== audioToken) return;
+        if (!ok) showAudioFailure();
+      });
+    }
+    function tryCloudOrGoogle(){
+      const cloudKey = getSharedCloudKey();
+      if (cloudKey){
+        playCloudTTS(letter, cloudKey, myToken, function(ok){
+          if (myToken !== audioToken) return;
+          if (!ok) tryGoogleTrick();
+        });
+      } else {
+        tryGoogleTrick();
+      }
+    }
+    // Try your real recording first (.mp3 then .wav), same as the main app
+    tryAudioURL('audio/letters/' + id + '.mp3', myToken, function(okMp3){
+      if (myToken !== audioToken) return;
+      if (okMp3) return;
+      tryAudioURL('audio/letters/' + id + '.wav', myToken, function(okWav){
+        if (myToken !== audioToken) return;
+        if (okWav) return;
+        tryCloudOrGoogle();
+      });
+    });
+  }
+
+  // Prime audio on the very first tap anywhere — iOS Safari blocks audio
+  // that isn't directly tied to a user gesture, and without this, later
+  // attempts (especially the Cloud TTS fetch-based one) can be silently
+  // blocked for the rest of the session.
+  let audioUnlocked = false;
+  function unlockAudioOnce(){
+    if (audioUnlocked) return;
+    audioUnlocked = true;
+    try{
+      const s = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=');
+      s.play().catch(function(){});
+    }catch(e){}
+  }
+  document.addEventListener('pointerdown', unlockAudioOnce, { once: true });
+
+  document.getElementById('soundBtn').addEventListener('click', playLetterAudio);
+
+  function startDrawing(e) {
+    isDrawing = true;
+    draw(e);
+  }
+
+  function stopDrawing() {
+    isDrawing = false;
+    ctx.beginPath();
+  }
+
+  function draw(e) {
+    if (!isDrawing) return;
+    e.preventDefault();
+
+    const rect = canvas.getBoundingClientRect();
+    let clientX, clientY;
+    
+    if (e.touches && e.touches.length > 0) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+
+    ctx.lineWidth = 16;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = currentColor;
+
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+  }
+
+  canvas.addEventListener('mousedown', startDrawing);
+  canvas.addEventListener('mousemove', draw);
+  canvas.addEventListener('mouseup', stopDrawing);
+  canvas.addEventListener('mouseout', stopDrawing);
+
+  canvas.addEventListener('touchstart', startDrawing, { passive: false });
+  canvas.addEventListener('touchmove', draw, { passive: false });
+  canvas.addEventListener('touchend', stopDrawing);
+  canvas.addEventListener('touchcancel', stopDrawing);
+
+  document.getElementById('clearBtn').addEventListener('click', drawBackgroundLetter);
+  
+  document.getElementById('prevBtn').addEventListener('click', () => {
+    currentIndex = (currentIndex - 1 + allLetters.length) % allLetters.length;
+    drawBackgroundLetter();
+    playLetterAudio();
+  });
+
+  document.getElementById('nextBtn').addEventListener('click', () => {
+    currentIndex = (currentIndex + 1) % allLetters.length;
+    drawBackgroundLetter();
+    playLetterAudio();
+  });
+
+  document.querySelectorAll('.color-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+      e.target.classList.add('active');
+      currentColor = e.target.getAttribute('data-color');
+    });
+  });
+
+  let fontReady = false;
+  function whenFontReady(cb){
+    document.fonts.load("200px 'Noto Sans Ethiopic'").then(() => {
+      fontReady = true;
+      cb();
+    }).catch(() => {
+      fontReady = true; // draw anyway rather than staying stuck
+      cb();
+    });
+    // safety net in case the promise never settles for some reason
+    setTimeout(() => { if (!fontReady) { fontReady = true; cb(); } }, 1500);
+  }
+  window.addEventListener('load', () => {
+    whenFontReady(resizeCanvas);
+  });
+
+</script>
+</body>
+</html>
