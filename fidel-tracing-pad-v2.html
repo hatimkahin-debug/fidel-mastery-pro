@@ -11,14 +11,14 @@
     --dim:#9c8a70; --dim2:#4d4132; --danger:#c0524a; --success:#4caf7d;
   }
   *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; touch-action:none; }
-  html,body{ height:100%; }
+  html,body{ height:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; }
   body{
     background: radial-gradient(ellipse at 50% 0%, var(--bg2), var(--bg) 65%);
     color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;
     touch-action: pan-y;
   }
   .amh{ font-family:'Noto Sans Ethiopic', sans-serif; }
-  #wrap{ max-width:480px; margin:0 auto; padding: calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom)); }
+  #wrap{ max-width:480px; margin:0 auto; padding: calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom)); min-height:100%; }
   h1{ font-size:19px; font-weight:800; margin-bottom:4px; }
   .sub{ font-size:12px; color:var(--dim); margin-bottom:14px; line-height:1.5; }
 
@@ -39,7 +39,7 @@
   #soundBtn.fail{ background: rgba(192,82,74,0.15); border-color:var(--danger); color:var(--danger); }
 
   #canvasWrap{ display:flex; justify-content:center; margin-bottom:12px; }
-  canvas{ background: rgba(255,255,255,0.03); border:3px dashed var(--dim2); border-radius:18px; touch-action:none; }
+  canvas{ background: rgba(255,255,255,0.03); border:3px dashed var(--dim2); border-radius:18px; touch-action:none; width:min(300px, 78vw); height:min(300px, 78vw); max-height:60vh; }
 
   .navRow{ display:flex; gap:10px; margin-bottom:10px; }
   .navBtn{ flex:1; background:var(--bg); border:1px solid var(--dim2); color:var(--ink); padding:12px; border-radius:14px; font-weight:700; font-size:14px; }
@@ -48,6 +48,17 @@
   .palette{ display:flex; justify-content:center; gap:10px; margin-top:6px; }
   .swatch{ width:32px; height:32px; border-radius:50%; border:3px solid transparent; }
   .swatch.active{ border-color:var(--ink); transform:scale(1.1); }
+
+  #mnemonic{ font-size:12px; color:var(--dim); text-align:center; line-height:1.5; margin: 2px 0 12px; padding:0 6px; }
+
+  .toolRow{ display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
+  .toolBtn{ flex:1; min-width:70px; background:var(--bg); border:1px solid var(--dim2); color:var(--ink); padding:9px 6px; border-radius:12px; font-size:12px; font-weight:600; }
+  .toolBtn.active{ border-color:var(--gold); background: rgba(212,162,78,0.12); color:var(--gold); }
+  #masteredBtn.on{ border-color:var(--success); background: rgba(76,175,125,0.15); color:var(--success); }
+
+  #scoreBox{ display:none; text-align:center; padding:10px; margin-bottom:10px; background:var(--bg); border-radius:12px; font-size:12px; color:var(--dim); }
+  #scoreBox.show{ display:block; }
+  #scoreBox b{ color:var(--gold); font-size:15px; }
 
   #grid{ display:grid; grid-template-columns:repeat(6,1fr); gap:6px; margin-top:16px; }
   .gridBtn{ background:var(--card); border:1px solid var(--dim2); border-radius:10px; padding:9px 2px; font-size:17px; color:var(--ink); }
@@ -66,6 +77,18 @@
       <div id="familyLabel">Hä family</div>
       <button id="soundBtn">&#128266; Play</button>
     </div>
+    <div id="mnemonic"></div>
+    <div class="toolRow">
+      <button class="toolBtn" id="masteredBtn">&#9744; Mastered</button>
+      <button class="toolBtn" id="demoBtn">&#9654; Demo</button>
+      <button class="toolBtn" id="checkBtn">&#10003; Check</button>
+    </div>
+    <div class="toolRow">
+      <button class="toolBtn" id="thinBtn">Thin</button>
+      <button class="toolBtn active" id="medBtn">Medium</button>
+      <button class="toolBtn" id="thickBtn">Thick</button>
+    </div>
+    <div id="scoreBox"></div>
     <div id="canvasWrap"><canvas id="cv" width="300" height="300"></canvas></div>
     <div class="navRow">
       <button class="navBtn" id="prevBtn">&#8592; Prev</button>
@@ -119,6 +142,42 @@
   const PHON_SUFFIX = ["ä","u","i","a","ē","ə","o"];
   const TTS_SUFFIX  = ["uh","oo","ee","ah","ay","ih","oh"];
 
+  const MNEMONICS = [
+    "A stick figure waving both arms \u2014 \u201csay HI!\u201d",
+    "A curling loop \u2014 a Lasso",
+    "Rounder, pot-bellied \u2014 a fat teapot going \u201chaaa\u201d",
+    "Twin loops side by side \u2014 a curly Moustache",
+    "Vertical teeth like a comb \u2014 a SAw blade",
+    "Hook with a line \u2014 a fishing Rod and Reel",
+    "Similar teeth, different rhythm \u2014 a picket fence, \u201cSEe the fence\u201d",
+    "Swirled shape \u2014 a SHEll",
+    "Loop with a tail \u2014 a Queen's Quill",
+    "Simple rounded pouch \u2014 a Bean",
+    "Cross-stroke on top \u2014 a Tea cup with spoon across it",
+    "Has a back/seat shape \u2014 a Chair",
+    "Has a hook shape \u2014 a coat HAnger",
+    "Curved cradle shape \u2014 a bird's Nest",
+    "Extra marks like whiskers \u2014 a cat's whiskers, \u201cnya~\u201d",
+    "Two upward strokes like horns \u2014 an Antelope's horns, \u201cAAH!\u201d",
+    "Hooked shape \u2014 a Key",
+    "Key shape with an extra kink \u2014 a bent Key",
+    "Round like a wheel \u2014 a Wheel or Watermelon",
+    "Round, eye-like shape \u2014 an eye at the doctor's, \u201cahh\u201d",
+    "Zigzag stroke \u2014 a lightning bolt, \u201cZzzt\u201d",
+    "Zigzag with extra flourish \u2014 a spark with a \u201czhh\u201d buzz",
+    "Hangs like a pendant \u2014 a Yo-yo",
+    "Loop with a stem \u2014 a Door with a knob",
+    "Hook dipping below the line \u2014 wobbly Jelly",
+    "Simple gate-like hook \u2014 a Gate",
+    "Spout-like loop \u2014 a Teapot spout (sharp, popping sound)",
+    "Chair-like with an extra bump \u2014 a Chair with a cushion",
+    "Pot with handles \u2014 a popping Pot lid",
+    "Scissor-like cross \u2014 Scissors, \u201ctsk-tsk\u201d",
+    "Round, sun-like \u2014 the Sun",
+    "Light, feathery loop \u2014 a Feather",
+    "Small round loop \u2014 a Pea"
+  ];
+
   let rowIdx = 0, orderIdx = 0;
   let fontReady = false;
 
@@ -129,9 +188,18 @@
   const soundBtn = document.getElementById('soundBtn');
   const grid = document.getElementById('grid');
   const palette = document.getElementById('palette');
+  const mnemonicEl = document.getElementById('mnemonic');
+  const masteredBtn = document.getElementById('masteredBtn');
+  const demoBtn = document.getElementById('demoBtn');
+  const checkBtn = document.getElementById('checkBtn');
+  const scoreBox = document.getElementById('scoreBox');
+  const thinBtn = document.getElementById('thinBtn');
+  const medBtn = document.getElementById('medBtn');
+  const thickBtn = document.getElementById('thickBtn');
 
   const colors = ['#e53e3e','#3182ce','#38a169','#d4a24e','#f1e4c8'];
   let currentColor = colors[0];
+  let currentWidth = 14;
   colors.forEach(function(c, i){
     const b = document.createElement('button');
     b.className = 'swatch' + (i===0 ? ' active' : '');
@@ -178,12 +246,38 @@
     ctx.fillText(FIDEL_ROWS[rowIdx].chars[orderIdx], w/2, h/2 + 6);
   }
 
+  function getSharedProgress(){
+    try{
+      const raw = localStorage.getItem('fidelMasteryPro.v1');
+      return raw ? JSON.parse(raw) : { favorites:[], mastered:[], quiz:{correct:0,total:0}, streak:{count:0,last:null} };
+    }catch(e){ return { favorites:[], mastered:[], quiz:{correct:0,total:0}, streak:{count:0,last:null} }; }
+  }
+  function saveSharedProgress(data){
+    try{ localStorage.setItem('fidelMasteryPro.v1', JSON.stringify(data)); }catch(e){}
+  }
+  function isMastered(id){ return getSharedProgress().mastered.indexOf(id) !== -1; }
+  function toggleMastered(id){
+    const data = getSharedProgress();
+    const i = data.mastered.indexOf(id);
+    if (i === -1) data.mastered.push(id); else data.mastered.splice(i,1);
+    saveSharedProgress(data);
+  }
+
   function render(){
+    const id = rowIdx + '_' + orderIdx;
     familyLabel.textContent = FIDEL_ROWS[rowIdx].name + ' family \u00b7 ' + VOWEL_ORDER[orderIdx] + ' order';
+    mnemonicEl.textContent = MNEMONICS[rowIdx];
     buildOrderStrip();
     updateGridActive();
     drawGuide();
     playLetterAudio();
+    updateMasteredBtn(id);
+    scoreBox.classList.remove('show');
+  }
+  function updateMasteredBtn(id){
+    const on = isMastered(id);
+    masteredBtn.classList.toggle('on', on);
+    masteredBtn.innerHTML = on ? '&#9989; Mastered' : '&#9744; Mastered';
   }
 
   document.getElementById('prevBtn').addEventListener('click', function(){
@@ -198,6 +292,85 @@
   });
   document.getElementById('clearBtn').addEventListener('click', drawGuide);
 
+  masteredBtn.addEventListener('click', function(){
+    const id = rowIdx + '_' + orderIdx;
+    toggleMastered(id);
+    updateMasteredBtn(id);
+  });
+
+  function setThickness(w, btn){
+    currentWidth = w;
+    [thinBtn, medBtn, thickBtn].forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  thinBtn.addEventListener('click', () => setThickness(6, thinBtn));
+  medBtn.addEventListener('click', () => setThickness(14, medBtn));
+  thickBtn.addEventListener('click', () => setThickness(24, thickBtn));
+
+  // ---- Demo: replay the letter as a stroke-reveal animation, wipe-style ----
+  let demoRunning = false;
+  demoBtn.addEventListener('click', function(){
+    if (demoRunning || !fontReady) return;
+    demoRunning = true;
+    const w = canvas.width, h = canvas.height;
+    const letter = FIDEL_ROWS[rowIdx].chars[orderIdx];
+    const duration = 1400;
+    const start = performance.now();
+    function step(now){
+      const t = Math.min(1, (now - start) / duration);
+      ctx.clearRect(0, 0, w, h);
+      ctx.font = "180px 'Noto Sans Ethiopic'";
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'rgba(241,228,200,0.15)';
+      ctx.fillText(letter, w/2, h/2 + 6);
+      const revealX = t * w;
+      ctx.save();
+      ctx.beginPath(); ctx.rect(0, 0, revealX, h); ctx.clip();
+      ctx.fillStyle = '#d4a24e';
+      ctx.fillText(letter, w/2, h/2 + 6);
+      ctx.restore();
+      if (t < 1){ requestAnimationFrame(step); }
+      else { demoRunning = false; setTimeout(drawGuide, 400); }
+    }
+    requestAnimationFrame(step);
+  });
+
+  // ---- Check: rough approximation of how well your trace matches the guide ----
+  // Not real handwriting recognition — just pixel-overlap between what you
+  // drew and the guide letter's shape, meant as a rough nudge, not a grade.
+  checkBtn.addEventListener('click', function(){
+    const w = canvas.width, h = canvas.height;
+    const guideCanvas = document.createElement('canvas');
+    guideCanvas.width = w; guideCanvas.height = h;
+    const gctx = guideCanvas.getContext('2d');
+    gctx.font = "180px 'Noto Sans Ethiopic'";
+    gctx.textAlign = 'center'; gctx.textBaseline = 'middle';
+    gctx.fillStyle = '#fff';
+    gctx.fillText(FIDEL_ROWS[rowIdx].chars[orderIdx], w/2, h/2 + 6);
+    const guideData = gctx.getImageData(0, 0, w, h).data;
+    const drawnData = ctx.getImageData(0, 0, w, h).data;
+
+    let guideInk = 0, drawnInk = 0, overlap = 0;
+    for (let i = 0; i < guideData.length; i += 4){
+      const isGuideInk = guideData[i+3] > 40;
+      const isDrawnInk = drawnData[i+3] > 40 && !(drawnData[i]>230 && drawnData[i+1]>210 && drawnData[i+2]>170 && drawnData[i+3]<60);
+      if (isGuideInk) guideInk++;
+      if (isDrawnInk){
+        drawnInk++;
+        if (isGuideInk) overlap++;
+      }
+    }
+    if (drawnInk < 50){
+      scoreBox.innerHTML = 'Trace the letter first, then tap Check.';
+      scoreBox.classList.add('show');
+      return;
+    }
+    const accuracy = Math.round(100 * overlap / Math.max(1, drawnInk));
+    const coverage = Math.round(100 * overlap / Math.max(1, guideInk));
+    scoreBox.innerHTML = '<b>' + accuracy + '%</b> on the letter &nbsp;\u00b7&nbsp; <b>' + coverage + '%</b> of it covered<br><span style="font-size:10px;">(rough estimate, not exact grading)</span>';
+    scoreBox.classList.add('show');
+  });
+
   // ---- Drawing (mouse + touch) ----
   let isDrawing = false;
   function getPos(e){
@@ -211,7 +384,7 @@
     if (!isDrawing) return;
     e.preventDefault();
     const p = getPos(e);
-    ctx.lineWidth = 14; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.lineWidth = currentWidth; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     ctx.strokeStyle = currentColor;
     ctx.lineTo(p.x, p.y); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(p.x, p.y);
@@ -362,6 +535,8 @@
   buildOrderStrip();
   updateGridActive();
   familyLabel.textContent = FIDEL_ROWS[rowIdx].name + ' family \u00b7 ' + VOWEL_ORDER[orderIdx] + ' order';
+  mnemonicEl.textContent = MNEMONICS[rowIdx];
+  updateMasteredBtn(rowIdx + '_' + orderIdx);
 })();
 </script>
 </body>
