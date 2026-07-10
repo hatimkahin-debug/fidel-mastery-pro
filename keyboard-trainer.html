@@ -100,6 +100,7 @@
     <button id="lookupBtn">Translate</button>
     <div id="resultCard">
       <div class="resultRow2"><span class="rlbl">Amharic</span><span class="rval amh" id="resAm"></span></div>
+      <div class="resultRow2" id="resPhonRow" style="display:none;"><span class="rlbl">Phonetic</span><span class="rval" id="resPhon" style="font-style:italic; color:var(--gold);"></span></div>
       <div class="resultRow2"><span class="rlbl">English</span><span class="rval" id="resEn"></span></div>
       <div class="resultRow2"><span class="rlbl">Arabic</span><span class="rval" id="resAr" dir="rtl"></span></div>
     </div>
@@ -323,6 +324,28 @@ FIDEL_ROWS.forEach(function(row, rowIdx){
   const familyTitle = document.getElementById('familyTitle');
   const familyStrip = document.getElementById('familyStrip');
 
+  // ---- iOS Safari blocks audio/speech that isn't tied directly to a user
+  // tap. Since this page has no "Begin" screen like the main app, we prime
+  // both engines on the very first tap anywhere, so later async fallback
+  // calls (e.g. device voice after the Google-trick audio fails) aren't
+  // silently blocked for the rest of the session.
+  let audioUnlocked = false;
+  function unlockAudioOnce(){
+    if (audioUnlocked) return;
+    audioUnlocked = true;
+    try{
+      const s = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=');
+      s.play().catch(function(){});
+    }catch(e){}
+    try{
+      if (window.speechSynthesis){
+        const u = new SpeechSynthesisUtterance(''); u.volume = 0;
+        window.speechSynthesis.speak(u);
+      }
+    }catch(e){}
+  }
+  document.addEventListener('pointerdown', unlockAudioOnce, { once: true });
+
   // ---- lightweight audio: Cloud TTS (if a key was already saved by the main
   // app, sharing localStorage on the same origin) -> Google's translate
   // trick -> device voice ----
@@ -470,6 +493,28 @@ FIDEL_ROWS.forEach(function(row, rowIdx){
     return data[0].map(seg => seg[0]).join('');
   }
 
+  // Best-effort romanization (phonetic/Latin) reading for Amharic text, using
+  // Google's undocumented "dt=rm" flag. The exact response shape for this
+  // isn't officially documented, so this tries a couple of known field
+  // positions and simply omits the phonetic line if none of them pan out —
+  // never guesses or fabricates a reading.
+  async function googleRomanize(amharicText){
+    try{
+      const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=am&tl=en&dt=t&dt=rm&q='+encodeURIComponent(amharicText);
+      const resp = await fetch(url);
+      if (!resp.ok) return null;
+      const data = await resp.json();
+      const seg = data[0];
+      const candidates = [];
+      seg.forEach(function(s){
+        if (s && s[3]) candidates.push(s[3]);
+        if (s && s[2]) candidates.push(s[2]);
+      });
+      const joined = candidates.filter(Boolean).join(' ').trim();
+      return joined || null;
+    }catch(e){ return null; }
+  }
+
   const wordInput = document.getElementById('wordInput');
   const lookupBtn = document.getElementById('lookupBtn');
   const resultCard = document.getElementById('resultCard');
@@ -491,6 +536,7 @@ FIDEL_ROWS.forEach(function(row, rowIdx){
     lookupStatus.textContent = 'Translating…';
 
     const script = detectScript(text);
+    let amharicResult = null;
     try{
       if (script === 'am'){
         const [en, ar] = await Promise.all([
@@ -498,21 +544,36 @@ FIDEL_ROWS.forEach(function(row, rowIdx){
           googleTranslate(text, 'am', 'ar')
         ]);
         resAm.textContent = text; resEn.textContent = en; resAr.textContent = ar;
+        amharicResult = text;
       } else if (script === 'ar'){
         const [am, en] = await Promise.all([
           googleTranslate(text, 'ar', 'am'),
           googleTranslate(text, 'ar', 'en')
         ]);
         resAm.textContent = am; resEn.textContent = en; resAr.textContent = text;
+        amharicResult = am;
       } else {
         const [am, ar] = await Promise.all([
           googleTranslate(text, 'en', 'am'),
           googleTranslate(text, 'en', 'ar')
         ]);
         resAm.textContent = am; resEn.textContent = text; resAr.textContent = ar;
+        amharicResult = am;
       }
       resultCard.classList.add('show');
       lookupStatus.textContent = '';
+
+      // best-effort phonetic guide for whichever Amharic text is being shown
+      const phonRow = document.getElementById('resPhonRow');
+      const phonEl = document.getElementById('resPhon');
+      phonRow.style.display = 'none';
+      if (amharicResult){
+        const roman = await googleRomanize(amharicResult);
+        if (roman){
+          phonEl.textContent = roman;
+          phonRow.style.display = 'flex';
+        }
+      }
     }catch(err){
       lookupStatus.textContent = "Translation request failed (" + err.message + "). If you're viewing this inside an app's built-in preview, try opening the file directly in Safari instead — some in-app browsers block this kind of request even though audio/images load fine.";
     }
