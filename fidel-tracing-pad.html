@@ -2,310 +2,235 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Fidel Tracing Pad - Complete</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Fidel Tracing Pad</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic:wght@700;900&family=Baloo+2:wght@600;800&display=swap');
-  
-  :root {
-    --bg: #f8f9fa;
-    --card: #ffffff;
-    --text: #2d3748;
-    --guide: #e2e8f0;
-    --btn-bg: #edf2f7;
-    --gold: #d4a24e;
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic:wght@400;700;900&family=Inter:wght@400;500;600;700;800&display=swap');
+  :root{
+    --bg:#14100c; --bg2:#1c1510; --card:#221a13; --ink:#f1e4c8; --gold:#d4a24e;
+    --dim:#9c8a70; --dim2:#4d4132; --danger:#c0524a; --success:#4caf7d;
   }
-  
-  * { box-sizing: border-box; margin: 0; padding: 0; touch-action: none; }
-  
-  body {
-    background-color: var(--bg);
-    color: var(--text);
-    font-family: 'Baloo 2', sans-serif;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-height: 100vh;
-    padding: 20px 10px;
+  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; touch-action:none; }
+  html,body{ height:100%; }
+  body{
+    background: radial-gradient(ellipse at 50% 0%, var(--bg2), var(--bg) 65%);
+    color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;
+    touch-action: pan-y;
   }
+  .amh{ font-family:'Noto Sans Ethiopic', sans-serif; }
+  #wrap{ max-width:480px; margin:0 auto; padding: calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom)); }
+  h1{ font-size:19px; font-weight:800; margin-bottom:4px; }
+  .sub{ font-size:12px; color:var(--dim); margin-bottom:14px; line-height:1.5; }
 
-  .header {
-    text-align: center;
-    margin-bottom: 15px;
+  #orderStrip{ display:flex; justify-content:center; gap: clamp(4px,2vw,10px); margin-bottom:12px; }
+  .ord{ display:flex; flex-direction:column; align-items:center; opacity:0.4; padding:6px 4px; border-radius:10px; background:var(--card); min-width:34px; border:1px solid transparent; }
+  .ord.active{ opacity:1; border-color:var(--gold); background: rgba(212,162,78,0.1); }
+  .ord .oc{ font-size:18px; }
+  .ord .op{ font-size:9px; color:var(--dim); margin-top:1px; }
+  .ord.active .op{ color:var(--gold); font-weight:700; }
+
+  #card{ background:var(--card); border-radius:20px; padding:16px; }
+  .topRow{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
+  #familyLabel{ font-size:14px; font-weight:700; color:var(--gold); }
+  #soundBtn{
+    background: rgba(212,162,78,0.12); border:1px solid var(--gold); color:var(--gold);
+    padding:9px 16px; border-radius:20px; font-weight:700; font-size:13px;
   }
+  #soundBtn.fail{ background: rgba(192,82,74,0.15); border-color:var(--danger); color:var(--danger); }
 
-  .header h1 {
-    font-size: 26px;
-    color: #2b6cb0;
-    margin-bottom: 5px;
-  }
+  #canvasWrap{ display:flex; justify-content:center; margin-bottom:12px; }
+  canvas{ background: rgba(255,255,255,0.03); border:3px dashed var(--dim2); border-radius:18px; touch-action:none; }
 
-  .header p {
-    font-size: 14px;
-    color: #4a5568;
-    max-width: 400px;
-    line-height: 1.4;
-  }
+  .navRow{ display:flex; gap:10px; margin-bottom:10px; }
+  .navBtn{ flex:1; background:var(--bg); border:1px solid var(--dim2); color:var(--ink); padding:12px; border-radius:14px; font-weight:700; font-size:14px; }
+  #clearBtn{ background:none; border:1px solid var(--danger); color:var(--danger); }
 
-  .board-container {
-    background: var(--card);
-    padding: 15px;
-    border-radius: 24px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-    max-width: 400px;
-    position: relative;
-  }
+  .palette{ display:flex; justify-content:center; gap:10px; margin-top:6px; }
+  .swatch{ width:32px; height:32px; border-radius:50%; border:3px solid transparent; }
+  .swatch.active{ border-color:var(--ink); transform:scale(1.1); }
 
-  .top-controls {
-    display: flex;
-    width: 100%;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-  }
-
-  select {
-    padding: 8px 12px;
-    font-size: 16px;
-    border-radius: 8px;
-    border: 2px solid #cbd5e0;
-    background: #fff;
-    font-family: 'Noto Sans Ethiopic', sans-serif;
-    color: #2d3748;
-    font-weight: bold;
-    outline: none;
-  }
-
-  .sound-btn {
-    background: #ebf8ff;
-    color: #3182ce;
-    border: 2px solid #3182ce;
-    padding: 8px 16px;
-    border-radius: 12px;
-    font-size: 18px;
-    font-weight: bold;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    box-shadow: 0 2px 4px rgba(49, 130, 206, 0.2);
-  }
-  
-  .sound-btn:active {
-    transform: scale(0.95);
-    background: #3182ce;
-    color: #fff;
-  }
-
-  canvas {
-    background-color: #ffffff;
-    border: 4px dashed #cbd5e0;
-    border-radius: 16px;
-    cursor: crosshair;
-    width: 100%;
-    max-width: 320px;
-    height: 320px;
-    font-family: 'Noto Sans Ethiopic', sans-serif;
-  }
-
-  .controls {
-    display: flex;
-    justify-content: space-between;
-    width: 100%;
-    max-width: 320px;
-    margin-top: 15px;
-    align-items: center;
-  }
-
-  .nav-btn {
-    background: var(--btn-bg);
-    border: none;
-    font-size: 24px;
-    color: #2b6cb0;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    font-weight: bold;
-    cursor: pointer;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-  }
-
-  .nav-btn:active { transform: translateY(2px); }
-
-  .clear-btn {
-    background: #fc8181;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    font-size: 18px;
-    border-radius: 12px;
-    font-weight: bold;
-    font-family: 'Baloo 2', sans-serif;
-    cursor: pointer;
-    box-shadow: 0 4px 6px rgba(252, 129, 129, 0.3);
-  }
-
-  .clear-btn:active { transform: translateY(2px); }
-
-  .palette {
-    display: flex;
-    gap: 12px;
-    margin-top: 20px;
-  }
-
-  .color-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    border: 3px solid transparent;
-    cursor: pointer;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-  }
-
-  .color-btn.active {
-    border-color: #2d3748;
-    transform: scale(1.1);
-  }
-
-  .order-indicator {
-    margin-top: 10px;
-    font-size: 14px;
-    color: #718096;
-    font-weight: bold;
-  }
-
+  #grid{ display:grid; grid-template-columns:repeat(6,1fr); gap:6px; margin-top:16px; }
+  .gridBtn{ background:var(--card); border:1px solid var(--dim2); border-radius:10px; padding:9px 2px; font-size:17px; color:var(--ink); }
+  .gridBtn.active{ border-color:var(--gold); background: rgba(212,162,78,0.12); }
 </style>
 </head>
 <body>
+<div id="wrap">
+  <h1>Fidel Tracing Pad</h1>
+  <div class="sub">All 231 forms. Trace over the faint guide letter, tap the speaker to hear it (prefers your own recordings once you've added them).</div>
 
-  <div class="header">
-    <h1>Amharic Tracing Pad</h1>
-    <p>All 231 letters! Tap the speaker to hear the sound while tracing.</p>
-    <p style="font-size: 11px; color: #a0aec0; margin-top: 4px;">Uses the Noto Sans Ethiopic font, loaded automatically.</p>
-  </div>
+  <div id="orderStrip"></div>
 
-  <div class="board-container">
-    <div class="top-controls">
-      <select id="familySelect" aria-label="Select Letter Family"></select>
-      <button class="sound-btn" id="soundBtn">🔊 Play</button>
+  <div id="card">
+    <div class="topRow">
+      <div id="familyLabel">Hä family</div>
+      <button id="soundBtn">&#128266; Play</button>
     </div>
-
-    <canvas id="drawingCanvas" width="320" height="320"></canvas>
-    
-    <div class="controls">
-      <button class="nav-btn" id="prevBtn">&#8592;</button>
-      <button class="clear-btn" id="clearBtn">Erase</button>
-      <button class="nav-btn" id="nextBtn">&#8594;</button>
+    <div id="canvasWrap"><canvas id="cv" width="300" height="300"></canvas></div>
+    <div class="navRow">
+      <button class="navBtn" id="prevBtn">&#8592; Prev</button>
+      <button class="navBtn" id="clearBtn">Erase</button>
+      <button class="navBtn" id="nextBtn">Next &#8594;</button>
     </div>
-    <div class="order-indicator" id="orderIndicator">Order: 1st (Base)</div>
+    <div class="palette" id="palette"></div>
   </div>
 
-  <div class="palette">
-    <button class="color-btn active" style="background-color: #e53e3e;" data-color="#e53e3e"></button>
-    <button class="color-btn" style="background-color: #3182ce;" data-color="#3182ce"></button>
-    <button class="color-btn" style="background-color: #38a169;" data-color="#38a169"></button>
-    <button class="color-btn" style="background-color: #d69e2e;" data-color="#d69e2e"></button>
-    <button class="color-btn" style="background-color: #2d3748;" data-color="#2d3748"></button>
-  </div>
+  <div id="grid"></div>
+</div>
 
 <script>
-  const fidelGroups = [
-    ["ሀ", "ሁ", "ሂ", "ሃ", "ሄ", "ህ", "ሆ"],
-    ["ለ", "ሉ", "ሊ", "ላ", "ሌ", "ል", "ሎ"],
-    ["ሐ", "ሑ", "ሒ", "ሓ", "ሔ", "ሕ", "ሖ"],
-    ["መ", "ሙ", "ሚ", "ማ", "ሜ", "ም", "ሞ"],
-    ["ሠ", "ሡ", "ሢ", "ሣ", "ሤ", "ሥ", "ሦ"],
-    ["ረ", "ሩ", "ሪ", "ራ", "ሬ", "ር", "ሮ"],
-    ["ሰ", "ሱ", "ሲ", "ሳ", "ሴ", "ስ", "ሶ"],
-    ["ሸ", "ሹ", "ሺ", "ሻ", "ሼ", "ሽ", "ሾ"],
-    ["ቀ", "ቁ", "ቂ", "ቃ", "ቄ", "ቅ", "ቆ"],
-    ["በ", "ቡ", "ቢ", "ባ", "ቤ", "ብ", "ቦ"],
-    ["ተ", "ቱ", "ቲ", "ታ", "ቴ", "ት", "ቶ"],
-    ["ቸ", "ቹ", "ቺ", "ቻ", "ቼ", "ች", "ቾ"],
-    ["ኀ", "ኁ", "ኂ", "ኃ", "ኄ", "ኅ", "ኆ"],
-    ["ነ", "ኑ", "ኒ", "ና", "ኔ", "ን", "ኖ"],
-    ["ኘ", "ኙ", "ኚ", "ኛ", "ኜ", "ኝ", "ኞ"],
-    ["አ", "ኡ", "ኢ", "ኣ", "ኤ", "እ", "ኦ"],
-    ["ከ", "ኩ", "ኪ", "ካ", "ኬ", "ክ", "ኮ"],
-    ["ኸ", "ኹ", "ኺ", "ኻ", "ኼ", "ኽ", "ኾ"],
-    ["ወ", "ዉ", "ዊ", "ዋ", "ዌ", "ው", "ዎ"],
-    ["ዐ", "ዑ", "ዒ", "ዓ", "ዔ", "ዕ", "ዖ"],
-    ["ዘ", "ዙ", "ዚ", "ዛ", "ዜ", "ዝ", "ዞ"],
-    ["ዠ", "ዡ", "ዢ", "ዣ", "ዤ", "ዥ", "ዦ"],
-    ["የ", "ዩ", "ዪ", "ያ", "ዬ", "ይ", "ዮ"],
-    ["ደ", "ዱ", "ዲ", "ዳ", "ዴ", "ድ", "ዶ"],
-    ["ጀ", "ጁ", "ጂ", "ጃ", "ጄ", "ጅ", "ጆ"],
-    ["ገ", "ጉ", "ጊ", "ጋ", "ጌ", "ግ", "ጎ"],
-    ["ጠ", "ጡ", "ጢ", "ጣ", "ጤ", "ጥ", "ጦ"],
-    ["ጨ", "ጩ", "ጪ", "ጫ", "ጬ", "ጭ", "ጮ"],
-    ["ጰ", "ጱ", "ጲ", "ጳ", "ጴ", "ጵ", "ጶ"],
-    ["ጸ", "ጹ", "ጺ", "ጻ", "ጼ", "ጽ", "ጾ"],
-    ["ፀ", "ፁ", "ፂ", "ፃ", "ፄ", "ፅ", "ፆ"],
-    ["ፈ", "ፉ", "ፊ", "ፋ", "ፌ", "ፍ", "ፎ"],
-    ["ፐ", "ፑ", "ፒ", "ፓ", "ፔ", "ፕ", "ፖ"]
+(function(){
+  const FIDEL_ROWS = [
+    { chars:["ሀ","ሁ","ሂ","ሃ","ሄ","ህ","ሆ"], base:"h", name:"Hä" },
+    { chars:["ለ","ሉ","ሊ","ላ","ሌ","ል","ሎ"], base:"l", name:"Lä" },
+    { chars:["ሐ","ሑ","ሒ","ሓ","ሔ","ሕ","ሖ"], base:"h", name:"Ḥä" },
+    { chars:["መ","ሙ","ሚ","ማ","ሜ","ም","ሞ"], base:"m", name:"Mä" },
+    { chars:["ሠ","ሡ","ሢ","ሣ","ሤ","ሥ","ሦ"], base:"s", name:"Śä" },
+    { chars:["ረ","ሩ","ሪ","ራ","ሬ","ር","ሮ"], base:"r", name:"Rä" },
+    { chars:["ሰ","ሱ","ሲ","ሳ","ሴ","ስ","ሶ"], base:"s", name:"Sä" },
+    { chars:["ሸ","ሹ","ሺ","ሻ","ሼ","ሽ","ሾ"], base:"sh", name:"Shä" },
+    { chars:["ቀ","ቁ","ቂ","ቃ","ቄ","ቅ","ቆ"], base:"q", name:"Qä" },
+    { chars:["በ","ቡ","ቢ","ባ","ቤ","ብ","ቦ"], base:"b", name:"Bä" },
+    { chars:["ተ","ቱ","ቲ","ታ","ቴ","ት","ቶ"], base:"t", name:"Tä" },
+    { chars:["ቸ","ቹ","ቺ","ቻ","ቼ","ች","ቾ"], base:"ch", name:"Chä" },
+    { chars:["ኀ","ኁ","ኂ","ኃ","ኄ","ኅ","ኆ"], base:"h", name:"Ḫä" },
+    { chars:["ነ","ኑ","ኒ","ና","ኔ","ን","ኖ"], base:"n", name:"Nä" },
+    { chars:["ኘ","ኙ","ኚ","ኛ","ኜ","ኝ","ኞ"], base:"ny", name:"Nyä" },
+    { chars:["አ","ኡ","ኢ","ኣ","ኤ","እ","ኦ"], base:"", name:"Ä" },
+    { chars:["ከ","ኩ","ኪ","ካ","ኬ","ክ","ኮ"], base:"k", name:"Kä" },
+    { chars:["ኸ","ኹ","ኺ","ኻ","ኼ","ኽ","ኾ"], base:"k", name:"Khä" },
+    { chars:["ወ","ዉ","ዊ","ዋ","ዌ","ው","ዎ"], base:"w", name:"Wä" },
+    { chars:["ዐ","ዑ","ዒ","ዓ","ዔ","ዕ","ዖ"], base:"", name:"ʿÄ" },
+    { chars:["ዘ","ዙ","ዚ","ዛ","ዜ","ዝ","ዞ"], base:"z", name:"Zä" },
+    { chars:["ዠ","ዡ","ዢ","ዣ","ዤ","ዥ","ዦ"], base:"zh", name:"Zhä" },
+    { chars:["የ","ዩ","ዪ","ያ","ዬ","ይ","ዮ"], base:"y", name:"Yä" },
+    { chars:["ደ","ዱ","ዲ","ዳ","ዴ","ድ","ዶ"], base:"d", name:"Dä" },
+    { chars:["ጀ","ጁ","ጂ","ጃ","ጄ","ጅ","ጆ"], base:"j", name:"Jä" },
+    { chars:["ገ","ጉ","ጊ","ጋ","ጌ","ግ","ጎ"], base:"g", name:"Gä" },
+    { chars:["ጠ","ጡ","ጢ","ጣ","ጤ","ጥ","ጦ"], base:"t'", name:"Ṭä" },
+    { chars:["ጨ","ጩ","ጪ","ጫ","ጬ","ጭ","ጮ"], base:"ch'", name:"Chʼä" },
+    { chars:["ጰ","ጱ","ጲ","ጳ","ጴ","ጵ","ጶ"], base:"p'", name:"Pʼä" },
+    { chars:["ጸ","ጹ","ጺ","ጻ","ጼ","ጽ","ጾ"], base:"ts", name:"Tsä" },
+    { chars:["ፀ","ፁ","ፂ","ፃ","ፄ","ፅ","ፆ"], base:"ts", name:"Tsʼä" },
+    { chars:["ፈ","ፉ","ፊ","ፋ","ፌ","ፍ","ፎ"], base:"f", name:"Fä" },
+    { chars:["ፐ","ፑ","ፒ","ፓ","ፔ","ፕ","ፖ"], base:"p", name:"Pä" }
   ];
+  const VOWEL_ORDER = ["1st","2nd","3rd","4th","5th","6th","7th"];
+  const PHON_SUFFIX = ["ä","u","i","a","ē","ə","o"];
+  const TTS_SUFFIX  = ["uh","oo","ee","ah","ay","ih","oh"];
 
-  const allLetters = fidelGroups.flat();
-  let currentIndex = 0;
-  
-  const canvas = document.getElementById('drawingCanvas');
+  let rowIdx = 0, orderIdx = 0;
+  let fontReady = false;
+
+  const canvas = document.getElementById('cv');
   const ctx = canvas.getContext('2d');
-  const orderIndicator = document.getElementById('orderIndicator');
-  const familySelect = document.getElementById('familySelect');
-  
+  const orderStrip = document.getElementById('orderStrip');
+  const familyLabel = document.getElementById('familyLabel');
+  const soundBtn = document.getElementById('soundBtn');
+  const grid = document.getElementById('grid');
+  const palette = document.getElementById('palette');
+
+  const colors = ['#e53e3e','#3182ce','#38a169','#d4a24e','#f1e4c8'];
+  let currentColor = colors[0];
+  colors.forEach(function(c, i){
+    const b = document.createElement('button');
+    b.className = 'swatch' + (i===0 ? ' active' : '');
+    b.style.background = c;
+    b.addEventListener('click', function(){
+      document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+      b.classList.add('active');
+      currentColor = c;
+    });
+    palette.appendChild(b);
+  });
+
+  FIDEL_ROWS.forEach(function(row, i){
+    const b = document.createElement('button');
+    b.className = 'gridBtn amh';
+    b.textContent = row.chars[0];
+    b.addEventListener('click', function(){ rowIdx = i; orderIdx = 0; render(); });
+    grid.appendChild(b);
+  });
+
+  function buildOrderStrip(){
+    orderStrip.innerHTML = '';
+    FIDEL_ROWS[rowIdx].chars.forEach(function(ch, i){
+      const d = document.createElement('div');
+      d.className = 'ord' + (i === orderIdx ? ' active' : '');
+      d.innerHTML = '<div class="oc amh">'+ch+'</div><div class="op">'+PHON_SUFFIX[i]+'</div>';
+      d.addEventListener('click', function(){ orderIdx = i; render(); });
+      orderStrip.appendChild(d);
+    });
+  }
+
+  function updateGridActive(){
+    grid.querySelectorAll('.gridBtn').forEach((b,i) => b.classList.toggle('active', i === rowIdx));
+  }
+
+  function drawGuide(){
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    if (!fontReady) return;
+    ctx.font = "180px 'Noto Sans Ethiopic'";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(241,228,200,0.15)';
+    ctx.fillText(FIDEL_ROWS[rowIdx].chars[orderIdx], w/2, h/2 + 6);
+  }
+
+  function render(){
+    familyLabel.textContent = FIDEL_ROWS[rowIdx].name + ' family \u00b7 ' + VOWEL_ORDER[orderIdx] + ' order';
+    buildOrderStrip();
+    updateGridActive();
+    drawGuide();
+    playLetterAudio();
+  }
+
+  document.getElementById('prevBtn').addEventListener('click', function(){
+    let flat = rowIdx*7 + orderIdx - 1;
+    if (flat < 0) flat = FIDEL_ROWS.length*7 - 1;
+    rowIdx = Math.floor(flat/7); orderIdx = flat % 7; render();
+  });
+  document.getElementById('nextBtn').addEventListener('click', function(){
+    let flat = rowIdx*7 + orderIdx + 1;
+    if (flat >= FIDEL_ROWS.length*7) flat = 0;
+    rowIdx = Math.floor(flat/7); orderIdx = flat % 7; render();
+  });
+  document.getElementById('clearBtn').addEventListener('click', drawGuide);
+
+  // ---- Drawing (mouse + touch) ----
   let isDrawing = false;
-  let currentColor = '#e53e3e';
-  
-  const orderNames = ["1st (Ge'ez)", "2nd (Ka'eb)", "3rd (Salis)", "4th (Rabi)", "5th (Hamis)", "6th (Sadis)", "7th (Sabi)"];
-
-  fidelGroups.forEach((group, index) => {
-    const option = document.createElement('option');
-    option.value = index * 7;
-    option.text = `Family ${group[0]}`;
-    familySelect.appendChild(option);
-  });
-
-  familySelect.addEventListener('change', (e) => {
-    currentIndex = parseInt(e.target.value);
-    drawBackgroundLetter();
-  });
-
-  function resizeCanvas() {
+  function getPos(e){
     const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width;
-    canvas.height = rect.height;
-    drawBackgroundLetter();
+    const t = (e.touches && e.touches[0]) || e;
+    return { x: (t.clientX - rect.left) * (canvas.width/rect.width), y: (t.clientY - rect.top) * (canvas.height/rect.height) };
   }
-
-  function drawBackgroundLetter() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.font = "200px 'Noto Sans Ethiopic', sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillStyle = "#e2e8f0";
-    ctx.fillText(allLetters[currentIndex], canvas.width / 2, canvas.height / 2 + 10);
-    
-    const orderIndex = currentIndex % 7;
-    orderIndicator.textContent = `Order: ${orderNames[orderIndex]}`;
-    
-    const familyBaseIndex = currentIndex - orderIndex;
-    familySelect.value = familyBaseIndex;
+  function startDraw(e){ isDrawing = true; drawLine(e); }
+  function stopDraw(){ isDrawing = false; ctx.beginPath(); }
+  function drawLine(e){
+    if (!isDrawing) return;
+    e.preventDefault();
+    const p = getPos(e);
+    ctx.lineWidth = 14; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.strokeStyle = currentColor;
+    ctx.lineTo(p.x, p.y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(p.x, p.y);
   }
+  canvas.addEventListener('mousedown', startDraw);
+  canvas.addEventListener('mousemove', drawLine);
+  canvas.addEventListener('mouseup', stopDraw);
+  canvas.addEventListener('mouseout', stopDraw);
+  canvas.addEventListener('touchstart', startDraw, { passive:false });
+  canvas.addEventListener('touchmove', drawLine, { passive:false });
+  canvas.addEventListener('touchend', stopDraw);
+  canvas.addEventListener('touchcancel', stopDraw);
 
-  // ---- Audio: Cloud TTS (shared key from Fidel Mastery Pro, if saved) ->
-  // Google's translate trick -> clear failure message (no English-voice
-  // fallback, since it reads the wrong sound entirely).
+  // ---- Audio: real recording -> shared Cloud TTS key -> Google's trick -> visible failure ----
   let currentAudio = null, audioToken = 0;
-
   function stopAudio(){
     audioToken++;
     if (currentAudio){ try{ currentAudio.pause(); }catch(e){} }
   }
-
   function getSharedCloudKey(){
     try{
       const raw = localStorage.getItem('fidelMasteryPro.v1');
@@ -313,7 +238,6 @@
       return (JSON.parse(raw).cloudApiKey) || '';
     }catch(e){ return ''; }
   }
-
   function tryAudioURL(url, myToken, onDone){
     const audio = new Audio();
     currentAudio = audio;
@@ -327,15 +251,14 @@
     audio.addEventListener('playing', function(){ started = true; clearTimeout(watchdog); });
     audio.addEventListener('ended', function(){ finish(true); });
     audio.addEventListener('error', function(){ finish(false); });
+    audio.addEventListener('stalled', function(){ if (!started) finish(false); });
     audio.src = url;
     const p = audio.play();
     if (p && p.catch) p.catch(function(){ finish(false); });
   }
-
   function playCloudTTS(text, apiKey, myToken, onDone){
     fetch('https://texttospeech.googleapis.com/v1/text:synthesize?key=' + encodeURIComponent(apiKey), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ input:{text:text}, voice:{languageCode:'am-ET'}, audioConfig:{audioEncoding:'MP3'} })
     }).then(function(r){ return r.ok ? r.json() : null; })
       .then(function(json){
@@ -349,25 +272,19 @@
         if (p && p.catch) p.catch(function(){ if (myToken === audioToken) onDone(false); });
       }).catch(function(){ if (myToken === audioToken) onDone(false); });
   }
-
   function showAudioFailure(){
-    const btn = document.getElementById('soundBtn');
-    const original = btn.textContent;
-    btn.textContent = '\u26A0\uFE0F No audio right now';
-    btn.style.background = '#fed7d7';
+    soundBtn.classList.add('fail');
+    const original = soundBtn.innerHTML;
+    soundBtn.innerHTML = '&#9888;&#65039; No audio';
     setTimeout(function(){
-      btn.textContent = original;
-      btn.style.background = '';
-    }, 2000);
+      soundBtn.classList.remove('fail');
+      soundBtn.innerHTML = original;
+    }, 1800);
   }
-
-  function playLetterAudio() {
+  function playLetterAudio(){
     stopAudio();
     const myToken = audioToken;
-    const letter = allLetters[currentIndex];
-    // Same id scheme as the main app: rowIdx_orderIdx, e.g. "0_0" for ሀ
-    const rowIdx = Math.floor(currentIndex / 7);
-    const orderIdx = currentIndex % 7;
+    const letter = FIDEL_ROWS[rowIdx].chars[orderIdx];
     const id = rowIdx + '_' + orderIdx;
 
     function tryGoogleTrick(){
@@ -388,7 +305,6 @@
         tryGoogleTrick();
       }
     }
-    // Try your real recording first (.mp3 then .wav), same as the main app
     tryAudioURL('audio/letters/' + id + '.mp3', myToken, function(okMp3){
       if (myToken !== audioToken) return;
       if (okMp3) return;
@@ -399,11 +315,10 @@
       });
     });
   }
+  soundBtn.addEventListener('click', playLetterAudio);
 
-  // Prime audio on the very first tap anywhere — iOS Safari blocks audio
-  // that isn't directly tied to a user gesture, and without this, later
-  // attempts (especially the Cloud TTS fetch-based one) can be silently
-  // blocked for the rest of the session.
+  // Prime audio on first tap anywhere — iOS blocks audio not directly tied
+  // to a user gesture, which silently breaks later async playback attempts.
   let audioUnlocked = false;
   function unlockAudioOnce(){
     if (audioUnlocked) return;
@@ -413,97 +328,26 @@
       s.play().catch(function(){});
     }catch(e){}
   }
-  document.addEventListener('pointerdown', unlockAudioOnce, { once: true });
+  document.addEventListener('pointerdown', unlockAudioOnce, { once:true });
 
-  document.getElementById('soundBtn').addEventListener('click', playLetterAudio);
-
-  function startDrawing(e) {
-    isDrawing = true;
-    draw(e);
-  }
-
-  function stopDrawing() {
-    isDrawing = false;
-    ctx.beginPath();
-  }
-
-  function draw(e) {
-    if (!isDrawing) return;
-    e.preventDefault();
-
-    const rect = canvas.getBoundingClientRect();
-    let clientX, clientY;
-    
-    if (e.touches && e.touches.length > 0) {
-      clientX = e.touches[0].clientX;
-      clientY = e.touches[0].clientY;
-    } else {
-      clientX = e.clientX;
-      clientY = e.clientY;
-    }
-
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
-
-    ctx.lineWidth = 16;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.strokeStyle = currentColor;
-
-    ctx.lineTo(x, y);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-  }
-
-  canvas.addEventListener('mousedown', startDrawing);
-  canvas.addEventListener('mousemove', draw);
-  canvas.addEventListener('mouseup', stopDrawing);
-  canvas.addEventListener('mouseout', stopDrawing);
-
-  canvas.addEventListener('touchstart', startDrawing, { passive: false });
-  canvas.addEventListener('touchmove', draw, { passive: false });
-  canvas.addEventListener('touchend', stopDrawing);
-  canvas.addEventListener('touchcancel', stopDrawing);
-
-  document.getElementById('clearBtn').addEventListener('click', drawBackgroundLetter);
-  
-  document.getElementById('prevBtn').addEventListener('click', () => {
-    currentIndex = (currentIndex - 1 + allLetters.length) % allLetters.length;
-    drawBackgroundLetter();
-    playLetterAudio();
+  // Wait for the real web font before drawing on canvas — canvas text can
+  // silently render with a fallback font (or a blank/tofu glyph) if the
+  // font isn't confirmed loaded yet.
+  document.fonts.load("180px 'Noto Sans Ethiopic'").then(function(){
+    return document.fonts.ready;
+  }).then(function(){
+    fontReady = true;
+    drawGuide();
+  }).catch(function(){
+    fontReady = true;
+    drawGuide();
   });
+  setTimeout(function(){ if (!fontReady){ fontReady = true; drawGuide(); } }, 1500);
 
-  document.getElementById('nextBtn').addEventListener('click', () => {
-    currentIndex = (currentIndex + 1) % allLetters.length;
-    drawBackgroundLetter();
-    playLetterAudio();
-  });
-
-  document.querySelectorAll('.color-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
-      e.target.classList.add('active');
-      currentColor = e.target.getAttribute('data-color');
-    });
-  });
-
-  let fontReady = false;
-  function whenFontReady(cb){
-    document.fonts.load("200px 'Noto Sans Ethiopic'").then(() => {
-      fontReady = true;
-      cb();
-    }).catch(() => {
-      fontReady = true; // draw anyway rather than staying stuck
-      cb();
-    });
-    // safety net in case the promise never settles for some reason
-    setTimeout(() => { if (!fontReady) { fontReady = true; cb(); } }, 1500);
-  }
-  window.addEventListener('load', () => {
-    whenFontReady(resizeCanvas);
-  });
-
+  buildOrderStrip();
+  updateGridActive();
+  familyLabel.textContent = FIDEL_ROWS[rowIdx].name + ' family \u00b7 ' + VOWEL_ORDER[orderIdx] + ' order';
+})();
 </script>
 </body>
 </html>
