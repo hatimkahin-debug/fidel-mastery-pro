@@ -62,6 +62,27 @@
   #grid{ display:grid; grid-template-columns:repeat(6,1fr); gap:6px; margin-top:16px; }
   .gridBtn{ background:var(--card); border:1px solid var(--dim2); border-radius:10px; padding:9px 2px; font-size:17px; color:var(--ink); }
   .gridBtn.active{ border-color:var(--gold); background: rgba(212,162,78,0.12); }
+
+  #sentencePanel{ margin-top:20px; background:var(--card); border-radius:18px; padding:16px; }
+  #sentencePanel h2{ font-size:15px; font-weight:800; margin-bottom:4px; }
+  #sentencePanel .sub2{ font-size:11px; color:var(--dim); margin-bottom:14px; line-height:1.5; }
+  .sentCard{ background:var(--bg); border-radius:14px; padding:14px; margin-bottom:10px; }
+  .sentCard:last-child{ margin-bottom:0; }
+  .sentAm{ font-size:18px; line-height:1.6; margin-bottom:6px; }
+  .sentPh{ font-size:12px; color:var(--gold); font-style:italic; margin-bottom:5px; }
+  .sentEn{ font-size:11.5px; color:var(--dim); margin-bottom:8px; }
+  .sentPlayBtn{
+    background: rgba(212,162,78,0.12); border:1px solid var(--gold); color:var(--gold);
+    padding:6px 14px; border-radius:16px; font-weight:700; font-size:11px;
+  }
+  .sentPlayBtn.playing{ animation: pulse 0.8s ease-in-out infinite; }
+  .sentBtnRow{ display:flex; align-items:center; gap:8px; }
+  .sentGlobeBtn{
+    width:28px; height:28px; border-radius:50%; background:rgba(66,133,244,0.12); border:1px solid #4285f4;
+    color:#4285f4; font-size:13px; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .sentGlobeBtn:active{ transform:scale(0.92); }
+  @keyframes pulse{ 0%,100%{ opacity:0.5; } 50%{ opacity:1; } }
 </style>
 </head>
 <body>
@@ -98,6 +119,12 @@
   </div>
 
   <div id="grid"></div>
+
+  <div id="sentencePanel">
+    <h2>Practice Sentences</h2>
+    <div class="sub2">Three short phrases covering 30 of the 33 letters between them (ኀ, ኸ, ዠ are historical duplicates with essentially no living words in modern Amharic, so they're not forced in here).</div>
+    <div id="sentList"></div>
+  </div>
 </div>
 
 <script>
@@ -210,6 +237,12 @@
     });
     palette.appendChild(b);
   });
+
+  const PRACTICE_SENTENCES = [
+    { am:"ልጅዬ ወደ ትምህርት ቤት ሄደ፣ ደብተር እና መጽሐፍ ይዞ።", ph:"Lijjé wede timhirt bet hede, debtär ena metsihaf yizo.", en:"My child went to school, carrying a notebook and book." },
+    { am:"ገበሬው በገበያ ቡናና ሻይ ሸጠ።", ph:"Gebereew be-gebeya bunana shai shet'e.", en:"The farmer sold coffee and tea at the market." },
+    { am:"ጸሐይዋ ላይ ወፍ በረረች፣ አበባዎችም አማሩ።", ph:"Tsähayiwa lay wef berrerech, abebawochim amaru.", en:"A bird flew in the sunshine, and the flowers bloomed." }
+  ];
 
   FIDEL_ROWS.forEach(function(row, i){
     const b = document.createElement('button');
@@ -536,6 +569,55 @@
   familyLabel.textContent = FIDEL_ROWS[rowIdx].name + ' family \u00b7 ' + VOWEL_ORDER[orderIdx] + ' order';
   mnemonicEl.textContent = MNEMONICS[rowIdx];
   updateMasteredBtn(rowIdx + '_' + orderIdx);
+
+  // ---- Practice sentences ----
+  const sentList = document.getElementById('sentList');
+  PRACTICE_SENTENCES.forEach(function(s, i){
+    const card = document.createElement('div');
+    card.className = 'sentCard';
+    card.innerHTML =
+      '<div class="sentAm amh">'+s.am+'</div>'
+      + '<div class="sentPh">"'+s.ph+'"</div>'
+      + '<div class="sentEn">'+s.en+'</div>'
+      + '<div class="sentBtnRow"><button class="sentPlayBtn">&#9654; Play</button><button class="sentGlobeBtn" title="Open in Google Translate">&#127760;</button></div>';
+    const btn = card.querySelector('.sentPlayBtn');
+    btn.addEventListener('click', function(){ playSentence(s, btn); });
+    const globeBtn = card.querySelector('.sentGlobeBtn');
+    globeBtn.addEventListener('click', function(){
+      const url = 'https://translate.google.com/?sl=am&tl=en&text=' + encodeURIComponent(s.am) + '&op=translate';
+      window.open(url, '_blank');
+    });
+    sentList.appendChild(card);
+  });
+
+  function playSentence(s, btn){
+    stopAudio();
+    const myToken = audioToken;
+    btn.classList.add('playing'); btn.innerHTML = '&#9724; Playing';
+    function done(){
+      if (myToken !== audioToken) return;
+      btn.classList.remove('playing'); btn.innerHTML = '&#9654; Play';
+    }
+    speakDevice(s.ph, myToken);
+    function tryGoogleTrick(){
+      const url = 'https://translate.google.com/translate_tts?ie=UTF-8&q=' + encodeURIComponent(s.am) + '&tl=am&client=tw-ob';
+      tryAudioURL(url, myToken, function(ok){
+        if (myToken !== audioToken) return;
+        if (ok && window.speechSynthesis) window.speechSynthesis.cancel();
+        done();
+      });
+    }
+    const cloudKey = getSharedCloudKey();
+    if (cloudKey){
+      playCloudTTS(s.am, cloudKey, myToken, function(ok){
+        if (myToken !== audioToken) return;
+        if (ok && window.speechSynthesis) window.speechSynthesis.cancel();
+        if (ok) done(); else tryGoogleTrick();
+      });
+    } else {
+      tryGoogleTrick();
+    }
+  }
 })();
 </script>
 </body>
