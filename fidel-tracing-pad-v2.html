@@ -10,12 +10,11 @@
     --bg:#14100c; --bg2:#1c1510; --card:#221a13; --ink:#f1e4c8; --gold:#d4a24e;
     --dim:#9c8a70; --dim2:#4d4132; --danger:#c0524a; --success:#4caf7d;
   }
-  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; touch-action:none; }
+  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
   html,body{ height:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; }
   body{
     background: radial-gradient(ellipse at 50% 0%, var(--bg2), var(--bg) 65%);
     color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;
-    touch-action: pan-y;
   }
   .amh{ font-family:'Noto Sans Ethiopic', sans-serif; }
   #wrap{ max-width:480px; margin:0 auto; padding: calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom)); min-height:100%; }
