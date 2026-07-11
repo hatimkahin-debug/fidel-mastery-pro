@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#14100c">
+<title>Amharic Conversations</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic:wght@400;500;700;900&family=Inter:wght@400;500;600;700;800&display=swap');
+  :root{
+    --bg:#14100c; --bg2:#1c1510; --card:#221a13; --ink:#f1e4c8; --gold:#d4a24e;
+    --dim:#9c8a70; --dim2:#4d4132; --success:#4caf7d; --bubble-you:#2a3f35; --bubble-them:#221a13;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html,body{ height:100%; }
+  body{
+    background: radial-gradient(ellipse at 50% 0%, var(--bg2), var(--bg) 65%);
+    color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;
+  }
+  .amh{ font-family:'Noto Sans Ethiopic', sans-serif; }
+  #app{ max-width:560px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column; }
+
+  /* ---------- Scenario list screen ---------- */
+  #listScreen{ padding: calc(20px + env(safe-area-inset-top)) 16px 20px; }
+  #listScreen h1{ font-size:22px; font-weight:800; margin-bottom:4px; }
+  #listScreen .sub{ font-size:13px; color:var(--dim); margin-bottom:20px; line-height:1.5; }
+  .scenarioCard{
+    background:var(--card); border-radius:16px; padding:16px 18px; margin-bottom:12px;
+    border:1px solid var(--dim2);
+  }
+  .scenarioCard h3{ font-size:16px; font-weight:700; margin-bottom:5px; }
+  .scenarioCard p{ font-size:12px; color:var(--dim); line-height:1.5; }
+  .scenarioCard .meta{ font-size:11px; color:var(--gold); margin-top:8px; font-weight:600; }
+
+  /* ---------- Conversation screen ---------- */
+  #convoScreen{ display:none; flex-direction:column; height:100vh; height:100dvh; }
+  #convoScreen.show{ display:flex; }
+  #convoHeader{
+    padding: calc(14px + env(safe-area-inset-top)) 16px 12px; display:flex; align-items:center; gap:12px;
+    border-bottom:1px solid rgba(255,255,255,0.06); background:rgba(20,16,12,0.9); backdrop-filter: blur(10px);
+  }
+  #backBtn{ background:var(--card); border:1px solid var(--dim2); color:var(--ink); width:38px; height:38px; border-radius:50%; font-size:16px; }
+  #convoTitle{ font-size:16px; font-weight:800; flex:1; }
+  #playAllBtn{ background:var(--gold); color:#221a13; border:none; padding:9px 16px; border-radius:20px; font-weight:700; font-size:12px; }
+
+  #convoBody{ flex:1; overflow-y:auto; padding: 16px; }
+  .bubbleRow{ display:flex; margin-bottom:16px; }
+  .bubbleRow.you{ justify-content:flex-end; }
+  .bubbleRow.them{ justify-content:flex-start; }
+  .bubble{
+    max-width:82%; border-radius:18px; padding:12px 14px; position:relative;
+  }
+  .bubbleRow.you .bubble{ background:var(--bubble-you); border-bottom-right-radius:5px; }
+  .bubbleRow.them .bubble{ background:var(--bubble-them); border:1px solid var(--dim2); border-bottom-left-radius:5px; }
+  .bubble .speakerTag{ font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:1px; margin-bottom:5px; font-weight:700; }
+  .bubble .amText{ font-size:19px; line-height:1.5; margin-bottom:4px; cursor:pointer; text-decoration: underline dotted var(--dim2); text-underline-offset:4px; }
+  .bubble .amText:active{ opacity:0.7; }
+  .bubble .gtHint{ font-size:10px; color:var(--dim2); margin-bottom:6px; }
+  .bubble .phText{ font-size:12.5px; color:var(--gold); font-style:italic; margin-bottom:4px; }
+  .bubble .enText{ font-size:12px; color:var(--dim); }
+  .bubble.playing{ box-shadow: 0 0 0 2px var(--gold); }
+  .bubble .playRow{ display:flex; align-items:center; gap:6px; margin-top:8px; }
+  .playIcon{
+    width:26px; height:26px; border-radius:50%; background:rgba(212,162,78,0.15); border:1px solid var(--gold);
+    color:var(--gold); font-size:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .playIcon.playing{ animation: pulse 0.8s ease-in-out infinite; }
+  .globeIcon{
+    width:26px; height:26px; border-radius:50%; background:rgba(66,133,244,0.12); border:1px solid #4285f4;
+    color:#4285f4; font-size:13px; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .globeIcon:active{ transform:scale(0.92); }
+  @keyframes pulse{ 0%,100%{ opacity:0.5; } 50%{ opacity:1; } }
+
+  #convoFooter{ padding: 10px 16px calc(14px + env(safe-area-inset-bottom)); font-size:11px; color:var(--dim); text-align:center; border-top:1px solid rgba(255,255,255,0.06); }
+</style>
+</head>
+<body>
+<audio id="ttsAudio" style="display:none;" playsinline></audio>
+<div id="app">
+
+  <div id="listScreen">
+    <h1>Amharic Conversations</h1>
+    <div class="sub">Tap a scenario to read the dialogue and hear each line spoken. Great for practicing real conversational rhythm, not just single letters.</div>
+    <div id="scenarioList"></div>
+  </div>
+
+  <div id="convoScreen">
+    <div id="convoHeader">
+      <button id="backBtn">&#8592;</button>
+      <div id="convoTitle"></div>
+      <button id="playAllBtn">&#9654; Play All</button>
+    </div>
+    <div id="convoBody"></div>
+    <div id="convoFooter">Tap any Amharic sentence to hear it spoken correctly on Google's own Translate page. The in-app speaker icon is a quicker best-effort attempt (uses your Cloud TTS key if saved, otherwise an approximate fallback).</div>
+  </div>
+
+</div>
+
+<script>
+const SCENARIOS = [
+  {
+    title: "The Deep Connection",
+    blurb: "Meeting an acquaintance at a cafe on a cloudy day — moving past small talk into family, career, and hopes for the future.",
+    lines: [
+      { speaker:"You", en:"Hello! The weather is beautiful today, isn't it?", ph:"Selam! Zare ayeru betam yamral, aydel?", am:"ሰላም! ዛሬ አየሩ በጣም ያምራል፣ አይደል?" },
+      { speaker:"Friend", en:"Yes, finally! I love cloudy and rainy weather like this.", ph:"Awo, beka! Endezi aynet dimena ena zenabaw ayer ewedalehu.", am:"አዎ፣ በቃ! እንደዚህ አይነት ደመና እና ዝናባማ አየር እወዳለሁ።" },
+      { speaker:"You", en:"Exactly. It brings peace to the mind. How is work going?", ph:"Lik neh. Le aemiro selam yisetal. Sira endet new?", am:"ልክ ነህ። ለአእምሮ ሰላም ይሰጣል። ሥራ እንዴት ነው?" },
+      { speaker:"Friend", en:"It's a bit stressful. What exactly do you do again?", ph:"Tinish wutret alebet. Ante be tigig min neber yemetseraw?", am:"ትንሽ ውጥረት አለበት። አንተ በርግጥ ምን ነበር የምትሰራው?" },
+      { speaker:"You", en:"I work as a manager in Fintech and mobile money operations.", ph:"Be fintech ena mobile money operations astedader new yemeseraw.", am:"በፊንቴክ እና ሞባይል ገንዘብ ኦፕሬሽንስ አስተዳደር ነው የምሰራው።" },
+      { speaker:"Friend", en:"That sounds huge. Is it difficult?", ph:"Kabad yimeslal. Yastegiral?", am:"ከባድ ይመስላል። ያስቸግራል?" },
+      { speaker:"You", en:"It can be, especially managing merchant onboarding networks. But it's exciting to build the digital economy.", ph:"Lihon yichilal, liyu be merchant onboarding astedader. Gin ye digital economy ginbata asdesachi new.", am:"ሊሆን ይችላል፣ ልዩ በነጋዴ ምዝገባ አስተዳደር። ግን የዲጂታል ኢኮኖሚ ግንባታ አስደሳች ነው።" },
+      { speaker:"Friend", en:"That's true. Do you have a family here?", ph:"Ewnet new. Ezi beteseb aleh?", am:"እውነት ነው። እዚህ ቤተሰብ አለህ?" },
+      { speaker:"You", en:"Yes, I am married. I have two daughters and a five-year-old son named Abdalla.", ph:"Awo, agebcheyalehu. Hulet setoch ena Abdalla yemibal ye amest amet wand lij alegn.", am:"አዎ፣ አግብቻለሁ። ሁለት ሴቶች እና አብደላ የሚባል የአምስት ዓመት ወንድ ልጅ አለኝ።" },
+      { speaker:"Friend", en:"May God bless them. What is your biggest dream for them?", ph:"Egziabher yabizalih. Tiliqu helmh mindinew le enesu?", am:"እግዚአብሔር ያብዛልህ። ትልቁ ህልምህ ምንድነው ለእነሱ?" },
+      { speaker:"You", en:"Just for them to have a peaceful life. I fear not spending enough time with them because of work.", ph:"Beka, selamawi nuro endinorachew. Ye sira bizat gize endalaketachew eferalehu.", am:"በቃ፣ ሰላማዊ ኑሮ እንዲኖራቸው። የሥራ ብዛት ጊዜ እንዳላጣባቸው እፈራለሁ።" },
+      { speaker:"Friend", en:"I understand completely. We should catch up again soon.", ph:"Betam yigebagnal. Beka beqirbu enigenagn.", am:"በጣም ይገባኛል። በቃ በቅርቡ እንገናኝ።" }
+    ]
+  },
+  {
+    title: "Watching the Game",
+    blurb: "Relaxing with a friend, discussing a high-stakes Real Madrid football match — form, transfers, and title hopes.",
+    lines: [
+      { speaker:"You", en:"Man, this match is getting intense!", ph:"Abo, chewatawu betam eyemoke new!", am:"አቦ፣ ጨዋታው በጣም እየሞቀ ነው!" },
+      { speaker:"Friend", en:"I know. Real Madrid's form is incredible this season.", ph:"Awo, Ye Real Madrid form zendro gobez new.", am:"አዎ፣ የሪያል ማድሪድ ፎርም ዘንድሮ ጎበዝ ነው።" },
+      { speaker:"You", en:"Did you see that pass? The transfers they made really paid off.", ph:"Pasu-n ayekew? Yadergut zewi-wir betam teqimual.", am:"ፓሱን አየኸው? ያደረጉት ዝውውር በጣም ጠቅሟል።" },
+      { speaker:"Friend", en:"Definitely. Do you think we'll win the league again?", ph:"Be-ergit. Wanchawun endegena yinesalut bileh tasbaleh?", am:"በእርግጥ። ዋንጫውን እንደገና ያነሱታል ብለህ ታስባለህ?" },
+      { speaker:"You", en:"Without a doubt. The midfield is completely dominating.", ph:"Minim tirtir yelem. Midawun mulu be mulu tetotaterewal.", am:"ምንም ጥርጥር የለም። ሜዳውን ሙሉ በሙሉ ተቆጣጥረዋል።" }
+    ]
+  },
+  {
+    title: "Dinner with Friends/Family",
+    blurb: "Visiting a local family for dinner, showing appreciation for the food, and sharing cultural ties.",
+    lines: [
+      { speaker:"Host", en:"Welcome! Please come in and sit down.", ph:"Enkuan dehna metachu! Gibu, teqemetu.", am:"እንኳን ደህና መጣችሁ! ግቡ፣ ተቀመጡ።" },
+      { speaker:"You", en:"Thank you for having me. Your home is lovely.", ph:"Betam amesegenalehu. Betachu betam yamral.", am:"በጣም አመሰግናለሁ። ቤታችሁ በጣም ያምራል።" },
+      { speaker:"Host", en:"Let's eat, the food is ready. Please, don't be shy.", ph:"Enibla, migeeb dreswal. Ebakachihu ateferu.", am:"እንብላ፣ ምግብ ደርሷል። እባካችሁ አትፈሩ።" },
+      { speaker:"You", en:"Bless your hands (traditional compliment). This is incredibly delicious.", ph:"Eje-seb. Migeebu betam yitaftal.", am:"እጀ ሰብ። ምግቡ በጣም ይጣፍጣል።" },
+      { speaker:"You", en:"My wife runs a business making date porridge, it's also very sweet. I will bring some for you next time.", ph:"Balebetey ye temir genfo teseralech, betam tafach new. Lela gize ezelachu emetalehu.", am:"ባለቤቴ የተምር ገንፎ ትሰራለች፣ በጣም ጣፋጭ ነው። ሌላ ጊዜ ይዤላችሁ እመጣለሁ።" },
+      { speaker:"Host", en:"Oh, that sounds wonderful! We would love to try it.", ph:"Ewunet? Betam des yilal! Memosker enifeligalen.", am:"እውነት? በጣም ደስ ይላል! መሞከር እንፈልጋለን።" }
+    ]
+  },
+  {
+    title: "Professional Service",
+    blurb: "Interacting with an official or vendor to resolve an operational or service issue.",
+    lines: [
+      { speaker:"Official", en:"Next! How can I help you today?", ph:"Qetay! Min liredot?", am:"ቀጣይ! ምን ልርዳዎት?" },
+      { speaker:"You", en:"Hello. I am here to lodge a complaint regarding the vendor system network.", ph:"Selam. Ye vendor system network guday lay qireta laqereb metiche neber.", am:"ሰላም. የቬንደር ሲስተም ኔትዎርክ ጉዳይ ላይ ቅሬታ ላቀርብ መጥቼ ነበር።" },
+      { speaker:"Official", en:"I see. Do you have your reference number and paperwork?", ph:"Eshi. Ye meqesha qutr ena sened yizewal?", am:"እሺ. የመለያ ቁጥር እና ሰነድ ይዘዋል?" },
+      { speaker:"You", en:"Yes, here they are. The service has been down since the pilot phase.", ph:"Awo, eneho. Agelgilotu ke pilot gize jemiro teqwaretwal.", am:"አዎ፣ እነሆ። አገልግሎቱ ከሙከራ ጊዜ ጀምሮ ተቋርጧል።" },
+      { speaker:"Official", en:"Let me check the system. Ah, I see the issue. We will reset it within the hour.", ph:"Systemun liyew. Ah, chigru gebtognal. Be and seat wiset enitseginawalen.", am:"ሲስተሙን ልየው። አህ፣ ችግሩ ገብቶኛል። በአንድ ሰዓት ውስጥ እንጠግነዋለን።" },
+      { speaker:"You", en:"Thank you for your quick assistance. Have a good day.", ph:"Le fetanu tbibirachu amesegenalehu. Melkam qen.", am:"ለፈጣኑ ትብብራችሁ አመሰግናለሁ። መልካም ቀን።" }
+    ]
+  },
+  {
+    title: "An Outdoor Walk",
+    blurb: "Walking outside with a friend, taking in the environment, and philosophizing about life and work-life balance.",
+    lines: [
+      { speaker:"You", en:"Walking outside like this really clears the head.", ph:"Wuchi lay endezi marged aemiron fasas yadergal.", am:"ውጪ ላይ እንደዚህ ማርገፍ አእምሮን ፈሳስ ያደርጋል።" },
+      { speaker:"Friend", en:"Absolutely. You've been traveling a lot for work recently.", ph:"Be-ergit. Beqirbu le sira betam eye-teguazk new.", am:"በእርግጥ። በቅርቡ ለሥራ በጣም እየተጓዝክ ነው።" },
+      { speaker:"You", en:"Yes, the field missions take a lot of energy. But I enjoy seeing the different regions.", ph:"Awo, ye meda sirawoch gulbet yiteyiqalu. Gin teleyayu kililochin mayet ewedalehu.", am:"አዎ፣ የሜዳ ሥራዎች ጉልበት ይጠይቃሉ። ግን የተለያዩ ክልሎችን ማየት እወዳለሁ።" },
+      { speaker:"Friend", en:"Do you ever plan to just settle down and stop the field work?", ph:"Beka ereft adirgeh ye meda sirawin lematqat asbeh tawqaleh?", am:"በቃ እረፍት አድርገህ የሜዳ ሥራውን ለማቆም አስበህ ታውቃለህ?" },
+      { speaker:"You", en:"I don't know yet. For now, I just want to ensure my family's future is secure.", ph:"Enja. Ahun lay, ye betesebeyn wedefit memeste-qake new emifelgew.", am:"እንጃ። አሁን ላይ፣ የቤተሰቤን ወደፊት ማስተካከል ነው የምፈልገው።" }
+    ]
+  },
+  {
+    title: "A Phone Call with a Friend",
+    blurb: "Catching up over a call and making weekend coffee plans.",
+    lines: [
+      { speaker:"You", en:"Hello! Can you hear me?", ph:"Alo! Tisemagnaleh?", am:"አሎ! ትሰማኛለህ?" },
+      { speaker:"Friend", en:"Yes, I hear you well. What's up?", ph:"Awo, bedenb isemahalehu. Min ale?", am:"አዎ፣ በደንብ እሰማሃለሁ። ምን አለ?" },
+      { speaker:"You", en:"I wanted to see — are we free to grab coffee this Saturday?", ph:"Kidame buna lintet'a inchilalen?", am:"ቅዳሜ ቡና ልንጠጣ እንችላለን?" },
+      { speaker:"Friend", en:"Sure, that sounds great! What time works for you?", ph:"Eshi, betam des yilal! Sint se'at yihonilhal?", am:"እሺ በጣም ደስ ይላል! ስንት ሰዓት ይሆንልሃል?" },
+      { speaker:"You", en:"How about 10 in the morning, at our usual place?", ph:"Tewat asra se'at, endelemedneu bota yihonal?", am:"ጠዋት አስር ሰዓት፣ እንደለመድነው ቦታ ይሆናል?" },
+      { speaker:"Friend", en:"Perfect, see you then! Take care.", ph:"Fitsum new, ezia inegenagn! Rasih t'ebiq.", am:"ፍጹም ነው፣ እዚያ እንገናኝ! ራስህን ጠብቅ።" },
+      { speaker:"You", en:"You too, talk soon. Bye!", ph:"Antem, beqirbu inewaraladen. Dehna hun!", am:"አንተም፣ በቅርቡ እንዋራላለን። ደህና ሁን!" }
+    ]
+  },
+  {
+    title: "Watching a Football Match",
+    blurb: "Live, in-the-moment reactions with a friend during a tense match — goals, a rough tackle, and penalty hopes.",
+    lines: [
+      { speaker:"You", en:"GOAL!! Did you see that strike?!", ph:"Gib!! Yanin mit ayehew?!", am:"ግብ!! ያንን ምት አየኸው?!" },
+      { speaker:"Friend", en:"Incredible! What a finish!", ph:"Yemayitamen! Indet yale wit'et!", am:"የማይታመን! እንዴት ያለ ውጤት!" },
+      { speaker:"You", en:"The referee should give a card for that tackle.", ph:"Yih takil kard lisetew yigebal.", am:"ይህ ታክል ካርድ ሊሰጠው ይገባል።" },
+      { speaker:"Friend", en:"I agree, that was a rough foul.", ph:"Isemamalehu, ya chekagn fawul neber.", am:"እስማማለሁ፣ ያ ጨካኝ ፋውል ነበር።" },
+      { speaker:"You", en:"This match is a rollercoaster of emotions.", ph:"Yih chewata ye sim'et wuta wured new.", am:"ይህ ጨዋታ የስሜት ውጣ ውረድ ነው።" },
+      { speaker:"Friend", en:"Let's hope for a penalty in the second half.", ph:"Behuletenyaw agemash penalti inagegn bilen tesfa inadirig.", am:"በሁለተኛው አጋማሽ ፐናልቲ እናገኝ ብለን ተስፋ እናድርግ።" },
+      { speaker:"You", en:"If we win this, we're celebrating tonight!", ph:"Yihin kashenefin, zare mata inakeberalen!", am:"ይህን ካሸነፍን፣ ዛሬ ማታ እናከበራለን!" }
+    ]
+  },
+  {
+    title: "The Coffee Ceremony",
+    blurb: "A bonus scenario — the traditional Abol, Tona, and Bereka rounds of an Ethiopian coffee ceremony.",
+    lines: [
+      { speaker:"Host", en:"Please sit, the coffee ceremony is about to begin.", ph:"Ebakih teqemet', ye buna sirATu lijemer new.", am:"እባክህ ተቀመጥ፣ የቡና ሥርዓቱ ሊጀመር ነው።" },
+      { speaker:"You", en:"I love the smell of the roasting beans.", ph:"Ye bunaw teren betam des yilegnal.", am:"የቡናው ጠረን በጣም ደስ ይለኛል።" },
+      { speaker:"Host", en:"This is the first round, called Abol. Please enjoy.", ph:"Yih ye mejemeriyaw zur new, Abol yibalal. Ebakih tedeset.", am:"ይህ የመጀመሪያው ዙር ነው፣ አቦል ይባላል። እባክህ ተደሰት።" },
+      { speaker:"You", en:"Thank you, it has a really good taste.", ph:"Amesegenalehu, betam t'iru t'a'im alew.", am:"አመሰግናለሁ፣ በጣም ጥሩ ጣዕም አለው።" },
+      { speaker:"Host", en:"We'll have three rounds total — Abol, Tona, and Bereka.", ph:"Beatekalay sost zur yinorenal - Abol, Tona ena Bereka.", am:"በአጠቃላይ ሦስት ዙር ይኖረናል - አቦል፣ ጦና እና በረካ።" },
+      { speaker:"You", en:"I've heard the third round brings blessings.", ph:"Sostenyaw zur bereka indemiyameta semahu.", am:"ሦስተኛው ዙር በረካ እንደሚያመጣ ሰማሁ።" }
+    ]
+  },
+  {
+    title: "Congratulations for Every Occasion",
+    blurb: "Common congratulatory exchanges for a marriage, a birthday, a new job, and a newborn baby.",
+    lines: [
+      { speaker:"You", en:"Congratulations on your marriage! Wishing you a lifetime of happiness.", ph:"Enkuan des aleh be tidar hiywetih! Idme lik destan imegnilhalehu.", am:"እንኳን ደስ አለህ በትዳር ህይወትህ! ዕድሜ ልክ ደስታን እመኝልሃለሁ።" },
+      { speaker:"Friend", en:"Thank you so much, your blessing means a lot to me.", ph:"Betam amesegenalehu, mirqatih le ine tilq bota alew.", am:"በጣም አመሰግናለሁ፣ ምርቃትህ ለእኔ ትልቅ ቦታ አለው።" },
+      { speaker:"You", en:"Happy birthday! May you have many more years of health.", ph:"Melkam lidet! Bizu ametat betena yiset'ih.", am:"መልካም ልደት! ብዙ ዓመታት በጤና ይስጥህ።" },
+      { speaker:"Friend", en:"Thank you, I really appreciate you remembering.", ph:"Amesegenalehu, silastawesikegn betam amesegenalehu.", am:"አመሰግናለሁ፣ ስላስታወስከኝ በጣም አመሰግናለሁ።" },
+      { speaker:"You", en:"Congratulations on the new job! You truly deserve this opportunity.", ph:"Enkuan des aleh be adisu sira! Bergit yihin idil yigebahal.", am:"እንኳን ደስ አለህ በአዲሱ ስራ! በርግጥ ይህን እድል ይገባሃል።" },
+      { speaker:"Friend", en:"Thank you, I couldn't have done it without your support.", ph:"Amesegenalehu, yale irswo digaf balichalku neber.", am:"አመሰግናለሁ፣ ያለ እርስዎ ድጋፍ ባልቻልኩ ነበር።" },
+      { speaker:"You", en:"Congratulations on the newborn! May God protect the baby.", ph:"Enkuan des aleh be hitsanu meweled! Egziabher lijun yit'ebiq.", am:"እንኳን ደስ አለህ በህፃኑ መወለድ! እግዚአብሔር ልጁን ይጠብቅ።" },
+      { speaker:"Friend", en:"Amen, thank you for your kind words.", ph:"Amen, sile melkam qalih amesegenalehu.", am:"አሜን፣ ስለ መልካም ቃልህ አመሰግናለሁ።" }
+    ]
+  },
+  {
+    title: "At the Mosque",
+    blurb: "A warm, respectful exchange with a fellow Muslim after Friday prayer.",
+    lines: [
+      { speaker:"You", en:"Peace be upon you, brother. How are you after prayer?", ph:"Asalamu alaikum wondeme. Ke solat behuala endet neh?", am:"አሰላሙ አለይኩም ወንድሜ። ከሶላት በኋላ እንዴት ነህ?" },
+      { speaker:"Friend", en:"Peace be upon you too. Praise be to God, I am well.", ph:"Wa alaikum salam. Alhamdulillah, dehna negn.", am:"ወዐለይኩም ሰላም። አልሐምዱሊላህ፣ ደህና ነኝ።" },
+      { speaker:"You", en:"That was a beautiful khutbah today, wasn't it?", ph:"Zare khutbaw betam yamare neber, aydel?", am:"ዛሬ ኹጥባው በጣም ያማረ ነበር፣ አይደል?" },
+      { speaker:"Friend", en:"Yes, the Imam spoke about patience and gratitude.", ph:"Awo, Imamu sile ti'igist ena misgana tenagere.", am:"አዎ፣ ኢማሙ ስለ ትዕግስት እና ምስጋና ተናገረ።" },
+      { speaker:"You", en:"May God accept our prayers.", ph:"Egziabher tselotachinin yiqebel.", am:"እግዚአብሔር ጸሎታችንን ይቀበል።" },
+      { speaker:"Friend", en:"Ameen. Are you coming to help with the community food drive this afternoon?", ph:"Amin. Zare kese sat behuala ye mahiberesib migib sitota lay tiredunalehen?", am:"አሚን። ዛሬ ከሰዓት በኋላ የማህበረሰብ ምግብ ስጦታ ላይ ትረዱናለህ?" },
+      { speaker:"You", en:"Yes, God willing, I'll be there. It's important to support each other.", ph:"Awo, be Allah feqad igegnalehu. Andachin lelelaw medres asfelagi new.", am:"አዎ፣ በአላህ ፈቃድ እገኛለሁ። አንዳችን ለሌላው መድረስ አስፈላጊ ነው።" },
+      { speaker:"Friend", en:"May God reward you for your good intentions.", ph:"Egziabher sile melkam hasabih yikfelih.", am:"እግዚአብሔር ስለ መልካም ሃሳብህ ይክፈልህ።" }
+    ]
+  },
+  {
+    title: "A Sincere Apology",
+    blurb: "Apologizing to a friend for letting them down and hurting their feelings.",
+    lines: [
+      { speaker:"You", en:"Do you have a moment? I need to talk to you about something.", ph:"Tinish gize aleh? Ye minegirih neger ale.", am:"ትንሽ ጊዜ አለህ? የምነግርህ ነገር አለ።" },
+      { speaker:"Friend", en:"Of course, what's going on?", ph:"Eshi bergit, min hone?", am:"እሺ በርግጥ፣ ምን ሆነ?" },
+      { speaker:"You", en:"I'm truly sorry for letting you down yesterday. I know I hurt your feelings.", ph:"Tilant silasazenkuh betam aznalehu. Simetih endegodahu awqalehu.", am:"ትላንት ስላሳዘንኩህ በጣም አዝናለሁ። ስሜትህን እንደጎዳሁ አውቃለሁ።" },
+      { speaker:"Friend", en:"It did hurt, but I appreciate you saying that.", ph:"Bergit asazinogn neber, gin yihin silalikegn amesegenalehu.", am:"በርግጥ አሳዝኖኝ ነበር፣ ግን ይህን ስላልከኝ አመሰግናለሁ።" },
+      { speaker:"You", en:"I should have thought more carefully before I acted. It won't happen again.", ph:"Kemesrate befit bedenb maseb neberebign. Endegena aydegemim.", am:"ከመስራቴ በፊት በደንብ ማሰብ ነበረብኝ። እንደገና አይደገምም።" },
+      { speaker:"Friend", en:"I forgive you. Our friendship means more than this.", ph:"Yiqir bilalehu. Wedajinetachin kezih yebeletegn tirgum alew.", am:"ይቅር ብያለሁ። ወዳጅነታችን ከዚህ የበለጠ ትርጉም አለው።" },
+      { speaker:"You", en:"Thank you for understanding. I really value you.", ph:"Silateredahegn amesegenalehu. Betam new yemakebrih.", am:"ስለተረዳኸኝ አመሰግናለሁ። በጣም ነው የማከብርህ።" },
+      { speaker:"Friend", en:"We're okay. Let's move forward.", ph:"Dehna nen. Wedefit inhid.", am:"ደህና ነን። ወደፊት እንሂድ።" }
+    ]
+  }
+];
+
+</script>
+<script>
+const CHAR_TO_SYL = {"ሀ": "He", "ሁ": "Hu", "ሂ": "Hi", "ሃ": "Ha", "ሄ": "Hie", "ህ": "H", "ሆ": "Ho", "ለ": "Le", "ሉ": "Lu", "ሊ": "Li", "ላ": "La", "ሌ": "Lie", "ል": "L", "ሎ": "Lo", "ሐ": "He", "ሑ": "Hu", "ሒ": "Hi", "ሓ": "Ha", "ሔ": "Hie", "ሕ": "H", "ሖ": "Ho", "መ": "Me", "ሙ": "Mu", "ሚ": "Mi", "ማ": "Ma", "ሜ": "Mie", "ም": "M", "ሞ": "Mo", "ሠ": "Se", "ሡ": "Su", "ሢ": "Si", "ሣ": "Sa", "ሤ": "Sie", "ሥ": "S", "ሦ": "So", "ረ": "Re", "ሩ": "Ru", "ሪ": "Ri", "ራ": "Ra", "ሬ": "Rie", "ር": "R", "ሮ": "Ro", "ሰ": "Se", "ሱ": "Su", "ሲ": "Si", "ሳ": "Sa", "ሴ": "Sie", "ስ": "S", "ሶ": "So", "ሸ": "She", "ሹ": "Shu", "ሺ": "Shi", "ሻ": "Sha", "ሼ": "Shie", "ሽ": "Sh", "ሾ": "Sho", "ቀ": "Qe", "ቁ": "Qu", "ቂ": "Qi", "ቃ": "Qa", "ቄ": "Qie", "ቅ": "Q", "ቆ": "Qo", "በ": "Be", "ቡ": "Bu", "ቢ": "Bi", "ባ": "Ba", "ቤ": "Bie", "ብ": "B", "ቦ": "Bo", "ተ": "Te", "ቱ": "Tu", "ቲ": "Ti", "ታ": "Ta", "ቴ": "Tie", "ት": "T", "ቶ": "To", "ቸ": "Che", "ቹ": "Chu", "ቺ": "Chi", "ቻ": "Cha", "ቼ": "Chie", "ች": "Ch", "ቾ": "Cho", "ኀ": "He", "ኁ": "Hu", "ኂ": "Hi", "ኃ": "Ha", "ኄ": "Hie", "ኅ": "H", "ኆ": "Ho", "ነ": "Ne", "ኑ": "Nu", "ኒ": "Ni", "ና": "Na", "ኔ": "Nie", "ን": "N", "ኖ": "No", "ኘ": "Nye", "ኙ": "Nyu", "ኚ": "Nyi", "ኛ": "Nya", "ኜ": "Nyie", "ኝ": "Ny", "ኞ": "Nyo", "አ": "E", "ኡ": "U", "ኢ": "I", "ኣ": "A", "ኤ": "Ie", "እ": "I", "ኦ": "O", "ከ": "Ke", "ኩ": "Ku", "ኪ": "Ki", "ካ": "Ka", "ኬ": "Kie", "ክ": "K", "ኮ": "Ko", "ኸ": "Ke", "ኹ": "Ku", "ኺ": "Ki", "ኻ": "Ka", "ኼ": "Kie", "ኽ": "K", "ኾ": "Ko", "ወ": "We", "ዉ": "Wu", "ዊ": "Wi", "ዋ": "Wa", "ዌ": "Wie", "ው": "W", "ዎ": "Wo", "ዐ": "E", "ዑ": "U", "ዒ": "I", "ዓ": "A", "ዔ": "Ie", "ዕ": "I", "ዖ": "O", "ዘ": "Ze", "ዙ": "Zu", "ዚ": "Zi", "ዛ": "Za", "ዜ": "Zie", "ዝ": "Z", "ዞ": "Zo", "ዠ": "Zhe", "ዡ": "Zhu", "ዢ": "Zhi", "ዣ": "Zha", "ዤ": "Zhie", "ዥ": "Zh", "ዦ": "Zho", "የ": "Ye", "ዩ": "Yu", "ዪ": "Yi", "ያ": "Ya", "ዬ": "Yie", "ይ": "Y", "ዮ": "Yo", "ደ": "De", "ዱ": "Du", "ዲ": "Di", "ዳ": "Da", "ዴ": "Die", "ድ": "D", "ዶ": "Do", "ጀ": "Je", "ጁ": "Ju", "ጂ": "Ji", "ጃ": "Ja", "ጄ": "Jie", "ጅ": "J", "ጆ": "Jo", "ገ": "Ge", "ጉ": "Gu", "ጊ": "Gi", "ጋ": "Ga", "ጌ": "Gie", "ግ": "G", "ጎ": "Go", "ጠ": "T'e", "ጡ": "T'u", "ጢ": "T'i", "ጣ": "T'a", "ጤ": "T'ie", "ጥ": "T'", "ጦ": "T'o", "ጨ": "Ch'e", "ጩ": "Ch'u", "ጪ": "Ch'i", "ጫ": "Ch'a", "ጬ": "Ch'ie", "ጭ": "Ch'", "ጮ": "Ch'o", "ጰ": "P'e", "ጱ": "P'u", "ጲ": "P'i", "ጳ": "P'a", "ጴ": "P'ie", "ጵ": "P'", "ጶ": "P'o", "ጸ": "Tse", "ጹ": "Tsu", "ጺ": "Tsi", "ጻ": "Tsa", "ጼ": "Tsie", "ጽ": "Ts", "ጾ": "Tso", "ፀ": "Tse", "ፁ": "Tsu", "ፂ": "Tsi", "ፃ": "Tsa", "ፄ": "Tsie", "ፅ": "Ts", "ፆ": "Tso", "ፈ": "Fe", "ፉ": "Fu", "ፊ": "Fi", "ፋ": "Fa", "ፌ": "Fie", "ፍ": "F", "ፎ": "Fo", "ፐ": "Pe", "ፑ": "Pu", "ፒ": "Pi", "ፓ": "Pa", "ፔ": "Pie", "ፕ": "P", "ፖ": "Po", "ሟ": "Mwa", "ሷ": "Swa", "ቋ": "Qwa", "ኋ": "Hwa", "ኳ": "Kwa", "ጓ": "Gwa", "ጧ": "T'wa", "ቬ": "Ve"};
+</script>
+<script>
+(function(){
+  // Splits an Amharic sentence into per-letter romanized syllables, e.g.
+  // "በቃ" -> "Be-Qa", using the 239-character lookup table above. Punctuation
+  // is preserved (attached to the preceding word); any character not in the
+  // table (very rare edge cases) is passed through unchanged rather than
+  // guessed at.
+  const PUNCT = new Set(['።','፣','፤','፥','፦','፧','!','?','.',',',';',':']);
+  function hyphenate(text){
+    const words = [];
+    let current = [];
+    function flush(){
+      if (current.length){ words.push('(' + current.join(',') + ')'); current = []; }
+    }
+    for (const ch of text){
+      if (ch === ' ' || ch === '​'){ flush(); }
+      else if (PUNCT.has(ch)){
+        flush();
+        if (words.length) words[words.length-1] += ch;
+        else words.push(ch);
+      } else if (CHAR_TO_SYL[ch]){
+        current.push(CHAR_TO_SYL[ch]);
+      } else {
+        current.push(ch); // unknown character — show as-is rather than guess
+      }
+    }
+    flush();
+    return words.join(' ');
+  }
+
+  const listScreen = document.getElementById('listScreen');
+  const convoScreen = document.getElementById('convoScreen');
+  const scenarioList = document.getElementById('scenarioList');
+  const convoTitle = document.getElementById('convoTitle');
+  const convoBody = document.getElementById('convoBody');
+  const playAllBtn = document.getElementById('playAllBtn');
+
+  SCENARIOS.forEach(function(sc, idx){
+    const card = document.createElement('div');
+    card.className = 'scenarioCard';
+    card.innerHTML = '<h3>'+sc.title+'</h3><p>'+sc.blurb+'</p><div class="meta">'+sc.lines.length+' lines &middot; tap to open</div>';
+    card.addEventListener('click', function(){ openScenario(idx); });
+    scenarioList.appendChild(card);
+  });
+
+  let currentLineEls = [];
+  function openScenario(idx){
+    const sc = SCENARIOS[idx];
+    convoTitle.textContent = sc.title;
+    convoBody.innerHTML = '';
+    currentLineEls = [];
+    sc.lines.forEach(function(line, i){
+      const isYou = line.speaker.toLowerCase() === 'you';
+      const row = document.createElement('div');
+      row.className = 'bubbleRow ' + (isYou ? 'you' : 'them');
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.innerHTML =
+        '<div class="speakerTag">'+line.speaker+'</div>'
+        + '<div class="amText amh">'+line.am+'</div>'
+        + '<div class="phText">"'+hyphenate(line.am)+'"</div>'
+        + '<div class="enText">'+line.en+'</div>'
+        + '<div class="playRow"><button class="playIcon">&#9654;</button><button class="globeIcon" title="Open in Google Translate">&#127760;</button></div>';
+      const amTextEl = bubble.querySelector('.amText');
+      const globeBtn = bubble.querySelector('.globeIcon');
+      function openGoogleTranslate(){
+        const url = 'https://translate.google.com/?sl=am&tl=en&text=' + encodeURIComponent(line.am) + '&op=translate';
+        window.open(url, '_blank');
+      }
+      amTextEl.addEventListener('click', openGoogleTranslate);
+      globeBtn.addEventListener('click', function(e){
+        e.stopPropagation();
+        openGoogleTranslate();
+      });
+      const playBtn = bubble.querySelector('.playIcon');
+      playBtn.addEventListener('click', function(){ playLine(i, bubble, playBtn); });
+      row.appendChild(bubble);
+      convoBody.appendChild(row);
+      currentLineEls.push({ line, bubble, playBtn });
+    });
+    listScreen.style.display = 'none';
+    convoScreen.classList.add('show');
+  }
+  document.getElementById('backBtn').addEventListener('click', function(){
+    stopAll();
+    convoScreen.classList.remove('show');
+    listScreen.style.display = 'block';
+  });
+
+  const audioEl = document.getElementById('ttsAudio');
+  let currentToken = 0;
+
+  let audioUnlocked = false;
+  function unlockAudioOnce(){
+    if (audioUnlocked) return;
+    audioUnlocked = true;
+    try{ audioEl.play().catch(function(){}); audioEl.pause(); }catch(e){}
+  }
+  document.addEventListener('pointerdown', unlockAudioOnce, { once:true });
+
+  function stopAll(){
+    currentToken++;
+    audioEl.pause();
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    currentLineEls.forEach(function(x){ x.bubble.classList.remove('playing'); x.playBtn.classList.remove('playing'); x.playBtn.innerHTML='&#9654;'; });
+  }
+
+  function getSharedCloudKey(){
+    try{
+      const raw = localStorage.getItem('fidelMasteryPro.v1');
+      if (!raw) return '';
+      return (JSON.parse(raw).cloudApiKey) || '';
+    }catch(e){ return ''; }
+  }
+
+  function playLine(i, bubble, playBtn, onComplete){
+    stopAll();
+    const myToken = currentToken;
+    const line = currentLineEls[i].line;
+    bubble.classList.add('playing'); playBtn.classList.add('playing'); playBtn.innerHTML='&#9724;';
+
+    function finish(ok){
+      if (myToken !== currentToken) return;
+      bubble.classList.remove('playing'); playBtn.classList.remove('playing'); playBtn.innerHTML='&#9654;';
+      if (!ok) flashNoAudioHint(bubble);
+      if (onComplete) onComplete();
+    }
+
+    function playGoogleTrick(){
+      const url = 'https://translate.google.com/translate_tts?ie=UTF-8&q=' + encodeURIComponent(line.am) + '&tl=am&client=tw-ob';
+      audioEl.src = url;
+      audioEl.onended = () => finish(true);
+      audioEl.onerror = () => finish(false);
+      audioEl.play().catch(function(err){
+        console.log("Audio play failed.", err);
+        finish(false);
+      });
+    }
+
+    const cloudKey = getSharedCloudKey();
+    if (cloudKey){
+      fetch('https://texttospeech.googleapis.com/v1/text:synthesize?key=' + encodeURIComponent(cloudKey), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ input:{text:line.am}, voice:{languageCode:'am-ET'}, audioConfig:{audioEncoding:'MP3'} })
+      }).then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(json){
+          if (myToken !== currentToken) return;
+          if (!json || !json.audioContent){ playGoogleTrick(); return; }
+          audioEl.src = 'data:audio/mp3;base64,' + json.audioContent;
+          audioEl.onended = () => finish(true);
+          audioEl.onerror = () => finish(false);
+          audioEl.play().catch(function(){ playGoogleTrick(); });
+        }).catch(function(){ if (myToken === currentToken) playGoogleTrick(); });
+    } else {
+      playGoogleTrick();
+    }
+  }
+
+  function flashNoAudioHint(bubble){
+    const hint = bubble.querySelector('.gtHint');
+    if (!hint) return;
+    const original = hint.textContent;
+    hint.textContent = '⚠️ No audio available right now — tap the Amharic text above for Google Translate’s real voice';
+    hint.style.color = 'var(--gold)';
+    hint.style.fontWeight = '700';
+    setTimeout(function(){
+      hint.textContent = original;
+      hint.style.color = '';
+      hint.style.fontWeight = '';
+    }, 3200);
+  }
+
+  let playAllActive = false;
+  playAllBtn.addEventListener('click', function(){
+    if (playAllActive){ stopAll(); playAllActive=false; playAllBtn.innerHTML='&#9654; Play All'; return; }
+    playAllActive = true;
+    playAllBtn.innerHTML = '&#9724; Stop';
+    let i = 0;
+    function next(){
+      if (!playAllActive || i >= currentLineEls.length){
+        playAllActive = false; playAllBtn.innerHTML = '&#9654; Play All'; return;
+      }
+      const { bubble, playBtn } = currentLineEls[i];
+      bubble.scrollIntoView({ behavior:'smooth', block:'center' });
+      playLine(i, bubble, playBtn, function(){
+        i++;
+        setTimeout(next, 350);
+      });
+    }
+    next();
+  });
+})();
+</script>
+</body>
+</html>
