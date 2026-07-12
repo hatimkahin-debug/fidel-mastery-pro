@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#14100c">
+<title>Essential Phrases</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic:wght@400;500;700;900&family=Inter:wght@400;500;600;700;800&display=swap');
+  :root{
+    --bg:#14100c; --bg2:#1c1510; --card:#221a13; --ink:#f1e4c8; --gold:#d4a24e;
+    --dim:#9c8a70; --dim2:#4d4132; --success:#4caf7d;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html,body{ height:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  body{
+    background: radial-gradient(ellipse at 50% 0%, var(--bg2), var(--bg) 65%);
+    color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;
+  }
+  .amh{ font-family:'Noto Sans Ethiopic', sans-serif; }
+  #wrap{ max-width:520px; margin:0 auto; padding: calc(18px + env(safe-area-inset-top)) 16px calc(18px + env(safe-area-inset-bottom)); }
+  h1{ font-size:20px; font-weight:800; margin-bottom:4px; }
+  .sub{ font-size:12px; color:var(--dim); margin-bottom:8px; line-height:1.6; }
+
+  .segwrap{ display:flex; gap:8px; margin: 14px 0 16px; overflow-x:auto; }
+  .segBtn{ background:var(--card); border:1px solid var(--dim2); color:var(--dim); padding:8px 14px; border-radius:20px; font-size:12px; font-weight:700; white-space:nowrap; }
+  .segBtn.active{ border-color:var(--gold); background: rgba(212,162,78,0.12); color:var(--gold); }
+
+  .card{ background:var(--card); border-radius:18px; padding:16px; margin-bottom:12px; }
+  .enRow{ font-size:12px; color:var(--dim); text-transform:uppercase; letter-spacing:1px; font-weight:700; margin-bottom:8px; }
+  .amRow{ font-size:26px; margin-bottom:4px; cursor:pointer; text-decoration: underline dotted var(--dim2); text-underline-offset:5px; }
+  .amRow:active{ opacity:0.7; }
+  .phRow{ font-size:13px; color:var(--gold); font-style:italic; margin-bottom:10px; }
+  .btnRow{ display:flex; align-items:center; gap:8px; }
+  .playBtn{
+    background: rgba(212,162,78,0.12); border:1px solid var(--gold); color:var(--gold);
+    padding:7px 16px; border-radius:18px; font-weight:700; font-size:12px;
+  }
+  .playBtn.playing{ animation: pulse 0.8s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{ opacity:0.5; } 50%{ opacity:1; } }
+  .globeBtn{
+    width:30px; height:30px; border-radius:50%; background:rgba(66,133,244,0.12); border:1px solid #4285f4;
+    color:#4285f4; font-size:14px; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .globeBtn:active{ transform:scale(0.92); }
+  .masterBtn{
+    width:30px; height:30px; border-radius:50%; background:var(--bg); border:1px solid var(--dim2);
+    color:var(--dim); font-size:14px; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-left:auto;
+  }
+  .masterBtn.on{ border-color:var(--success); color:var(--success); background:rgba(76,175,125,0.12); }
+
+  #footNote{ font-size:11px; color:var(--dim); text-align:center; margin-top:8px; line-height:1.6; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h1>Essential Phrases</h1>
+  <div class="sub">Common requests, built from a verb + "-ኝ" (me) ending — once you spot the pattern, you can recognize it everywhere.</div>
+
+  <div class="segwrap">
+    <button class="segBtn active" data-f="all">All</button>
+    <button class="segBtn" data-f="mastered">★ Mastered</button>
+  </div>
+
+  <div id="list"></div>
+  <div id="footNote">Tap any Amharic phrase, or the 🌐, to hear it read correctly on Google's own Translate page.</div>
+</div>
+
+<script>
+(function(){
+  const PHRASES = [
+    { en:"Understand me", am:"ተረዳኝ", ph:"Teredagn" },
+    { en:"Believe me", am:"እመነኝ", ph:"Amenegn" },
+    { en:"Teach me", am:"አስተምረኝ", ph:"Astemiregn" },
+    { en:"Listen to me", am:"አድምጠኝ", ph:"Admitegn" },
+    { en:"Show me", am:"አሳየኝ", ph:"Asayegn" },
+    { en:"Tell me", am:"ንገረኝ", ph:"Negeregn" },
+    { en:"Help me", am:"እርዳኝ", ph:"Irdagn" },
+    { en:"Trust me", am:"ታመነኝ", ph:"Tamenegn" },
+    { en:"Wait for me", am:"ጠብቀኝ", ph:"Tebiqegn" },
+    { en:"Give me", am:"ስጠኝ", ph:"Sitegn" }
+  ];
+
+  const list = document.getElementById('list');
+  let filter = 'all';
+
+  function getSharedProgress(){
+    try{
+      const raw = localStorage.getItem('fidelMasteryPro.v1');
+      return raw ? JSON.parse(raw) : { favorites:[], mastered:[], quiz:{correct:0,total:0}, streak:{count:0,last:null} };
+    }catch(e){ return { favorites:[], mastered:[], quiz:{correct:0,total:0}, streak:{count:0,last:null} }; }
+  }
+  function saveSharedProgress(data){
+    try{ localStorage.setItem('fidelMasteryPro.v1', JSON.stringify(data)); }catch(e){}
+  }
+  function phraseId(p){ return 'phrase_' + p.en.replace(/\s+/g,'_'); }
+  function isMastered(id){ return getSharedProgress().mastered.indexOf(id) !== -1; }
+  function toggleMastered(id){
+    const data = getSharedProgress();
+    const i = data.mastered.indexOf(id);
+    if (i === -1) data.mastered.push(id); else data.mastered.splice(i,1);
+    saveSharedProgress(data);
+  }
+
+  document.querySelectorAll('.segBtn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.segBtn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      filter = btn.dataset.f;
+      render();
+    });
+  });
+
+  function render(){
+    list.innerHTML = '';
+    const items = PHRASES.filter(function(p){
+      if (filter === 'mastered') return isMastered(phraseId(p));
+      return true;
+    });
+    if (!items.length){
+      list.innerHTML = '<div style="text-align:center; color:var(--dim); font-size:13px; padding:30px 10px;">No mastered phrases yet — star some below.</div>';
+      return;
+    }
+    items.forEach(function(p){
+      const id = phraseId(p);
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML =
+        '<div class="enRow">'+p.en+'</div>'
+        + '<div class="amRow amh">'+p.am+'</div>'
+        + '<div class="phRow">"'+p.ph+'"</div>'
+        + '<div class="btnRow">'
+        + '<button class="playBtn">&#9654; Play</button>'
+        + '<button class="globeBtn" title="Open in Google Translate">&#127760;</button>'
+        + '<button class="masterBtn'+(isMastered(id)?' on':'')+'">'+(isMastered(id)?'&#9989;':'&#9734;')+'</button>'
+        + '</div>';
+
+      card.querySelector('.amRow').addEventListener('click', () => openTranslate(p.am));
+      card.querySelector('.globeBtn').addEventListener('click', () => openTranslate(p.am));
+      const playBtn = card.querySelector('.playBtn');
+      playBtn.addEventListener('click', () => playPhrase(p, playBtn));
+      const masterBtn = card.querySelector('.masterBtn');
+      masterBtn.addEventListener('click', function(){
+        toggleMastered(id);
+        masterBtn.classList.toggle('on');
+        masterBtn.innerHTML = isMastered(id) ? '&#9989;' : '&#9734;';
+        if (filter === 'mastered') render();
+      });
+      list.appendChild(card);
+    });
+  }
+
+  function openTranslate(am){
+    window.open('https://translate.google.com/?sl=am&tl=en&text=' + encodeURIComponent(am) + '&op=translate', '_blank');
+  }
+
+  // ---- Audio: Cloud TTS (shared key) -> Google's trick -> immediate device voice ----
+  let currentAudio = null, audioToken = 0;
+  function stopAudio(){
+    audioToken++;
+    if (currentAudio){ try{ currentAudio.pause(); }catch(e){} }
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+  }
+  function getSharedCloudKey(){
+    try{
+      const raw = localStorage.getItem('fidelMasteryPro.v1');
+      if (!raw) return '';
+      return (JSON.parse(raw).cloudApiKey) || '';
+    }catch(e){ return ''; }
+  }
+  function speakDevice(text){
+    if (!window.speechSynthesis) return;
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US'; u.rate = 0.9;
+    window.speechSynthesis.speak(u);
+  }
+  function tryAudioURL(url, myToken, onDone){
+    const audio = new Audio();
+    currentAudio = audio;
+    let started = false, done = false;
+    function finish(ok){
+      if (done) return; done = true; clearTimeout(watchdog);
+      if (myToken !== audioToken) return;
+      onDone(ok);
+    }
+    const watchdog = setTimeout(function(){ if (!started) finish(false); }, 1200);
+    audio.addEventListener('playing', function(){ started = true; clearTimeout(watchdog); });
+    audio.addEventListener('ended', function(){ finish(true); });
+    audio.addEventListener('error', function(){ finish(false); });
+    audio.src = url;
+    const p = audio.play();
+    if (p && p.catch) p.catch(function(){ finish(false); });
+  }
+  function playCloudTTS(text, apiKey, myToken, onDone){
+    fetch('https://texttospeech.googleapis.com/v1/text:synthesize?key=' + encodeURIComponent(apiKey), {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ input:{text:text}, voice:{languageCode:'am-ET'}, audioConfig:{audioEncoding:'MP3'} })
+    }).then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(json){
+        if (myToken !== audioToken) return;
+        if (!json || !json.audioContent){ onDone(false); return; }
+        const audio = new Audio('data:audio/mp3;base64,' + json.audioContent);
+        currentAudio = audio;
+        audio.addEventListener('ended', function(){ if (myToken === audioToken) onDone(true); });
+        audio.addEventListener('error', function(){ if (myToken === audioToken) onDone(false); });
+        const p = audio.play();
+        if (p && p.catch) p.catch(function(){ if (myToken === audioToken) onDone(false); });
+      }).catch(function(){ if (myToken === audioToken) onDone(false); });
+  }
+  function playPhrase(p, btn){
+    stopAudio();
+    const myToken = audioToken;
+    btn.classList.add('playing'); btn.innerHTML = '&#9724; Playing';
+    function done(){
+      if (myToken !== audioToken) return;
+      btn.classList.remove('playing'); btn.innerHTML = '&#9654; Play';
+    }
+    speakDevice(p.ph);
+    function tryGoogleTrick(){
+      const url = 'https://translate.google.com/translate_tts?ie=UTF-8&q=' + encodeURIComponent(p.am) + '&tl=am&client=tw-ob';
+      tryAudioURL(url, myToken, function(ok){
+        if (myToken !== audioToken) return;
+        if (ok && window.speechSynthesis) window.speechSynthesis.cancel();
+        done();
+      });
+    }
+    const cloudKey = getSharedCloudKey();
+    if (cloudKey){
+      playCloudTTS(p.am, cloudKey, myToken, function(ok){
+        if (myToken !== audioToken) return;
+        if (ok && window.speechSynthesis) window.speechSynthesis.cancel();
+        if (ok) done(); else tryGoogleTrick();
+      });
+    } else {
+      tryGoogleTrick();
+    }
+  }
+
+  // Prime audio on first tap — iOS blocks audio not directly tied to a
+  // user gesture, which silently breaks later async playback attempts.
+  let audioUnlocked = false;
+  document.addEventListener('pointerdown', function(){
+    if (audioUnlocked) return;
+    audioUnlocked = true;
+    try{
+      const s = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=');
+      s.play().catch(function(){});
+    }catch(e){}
+  }, { once:true });
+
+  render();
+})();
+</script>
+</body>
+</html>
