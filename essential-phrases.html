@@ -56,10 +56,12 @@
 <body>
 <div id="wrap">
   <h1>Essential Phrases</h1>
-  <div class="sub">Common requests, built from a verb + "-ኝ" (me) ending — once you spot the pattern, you can recognize it everywhere.</div>
+  <div class="sub">Common requests ("verb + -ኝ/me") and getting-to-know-you questions — filter below to focus on one set.</div>
 
   <div class="segwrap">
     <button class="segBtn active" data-f="all">All</button>
+    <button class="segBtn" data-f="requests">Requests</button>
+    <button class="segBtn" data-f="questions">Questions</button>
     <button class="segBtn" data-f="mastered">★ Mastered</button>
   </div>
 
@@ -70,16 +72,28 @@
 <script>
 (function(){
   const PHRASES = [
-    { en:"Understand me", am:"ተረዳኝ", ph:"Teredagn" },
-    { en:"Believe me", am:"እመነኝ", ph:"Amenegn" },
-    { en:"Teach me", am:"አስተምረኝ", ph:"Astemiregn" },
-    { en:"Listen to me", am:"አድምጠኝ", ph:"Admitegn" },
-    { en:"Show me", am:"አሳየኝ", ph:"Asayegn" },
-    { en:"Tell me", am:"ንገረኝ", ph:"Negeregn" },
-    { en:"Help me", am:"እርዳኝ", ph:"Irdagn" },
-    { en:"Trust me", am:"ታመነኝ", ph:"Tamenegn" },
-    { en:"Wait for me", am:"ጠብቀኝ", ph:"Tebiqegn" },
-    { en:"Give me", am:"ስጠኝ", ph:"Sitegn" }
+    { en:"Understand me", am:"ተረዳኝ", ph:"Teredagn", cat:"requests" },
+    { en:"Believe me", am:"እመነኝ", ph:"Amenegn", cat:"requests" },
+    { en:"Teach me", am:"አስተምረኝ", ph:"Astemiregn", cat:"requests" },
+    { en:"Listen to me", am:"አድምጠኝ", ph:"Admitegn", cat:"requests" },
+    { en:"Show me", am:"አሳየኝ", ph:"Asayegn", cat:"requests" },
+    { en:"Tell me", am:"ንገረኝ", ph:"Negeregn", cat:"requests" },
+    { en:"Help me", am:"እርዳኝ", ph:"Irdagn", cat:"requests" },
+    { en:"Trust me", am:"ታመነኝ", ph:"Tamenegn", cat:"requests" },
+    { en:"Wait for me", am:"ጠብቀኝ", ph:"Tebiqegn", cat:"requests" },
+    { en:"Give me", am:"ስጠኝ", ph:"Sitegn", cat:"requests" },
+    { en:"What is your name?", am:"ስምህ ማን ነው?", ph:"Simih man new?", cat:"questions" },
+    { en:"Where do you live?", am:"የት ትኖራለህ?", ph:"Yet tinoraleh?", cat:"questions" },
+    { en:"How old are you?", am:"ስንት አመት ነህ?", ph:"Sint amet neh?", cat:"questions" },
+    { en:"What do you do?", am:"ምን ትሰራለህ?", ph:"Min tiseraleh?", cat:"questions" },
+    { en:"Can you help me?", am:"ልትረዳኝ ትችላለህ?", ph:"Litiredagn tichilaleh?", cat:"questions" },
+    { en:"Do you understand?", am:"ተረዳለህ?", ph:"Teredaleh?", cat:"questions" },
+    { en:"What time is it?", am:"ስንት ሰዓት ነው?", ph:"Sint se'at new?", cat:"questions" },
+    { en:"Where is the bus?", am:"አውቶብሱ የት ነው?", ph:"Awtobusu yet new?", cat:"questions" },
+    { en:"How much is this?", am:"ይሄ ስንት ነው?", ph:"Yihe sint new?", cat:"questions" },
+    { en:"Who is calling?", am:"ማን እየደወለ ነው?", ph:"Man iyedewele new?", cat:"questions" },
+    { en:"Why are you here?", am:"ለምን እዚህ ነህ?", ph:"Lemin izih neh?", cat:"questions" },
+    { en:"When will you start?", am:"መቼ ትጀምራለህ?", ph:"Meche tijemiraleh?", cat:"questions" }
   ];
 
   const list = document.getElementById('list');
@@ -116,6 +130,7 @@
     list.innerHTML = '';
     const items = PHRASES.filter(function(p){
       if (filter === 'mastered') return isMastered(phraseId(p));
+      if (filter === 'requests' || filter === 'questions') return p.cat === filter;
       return true;
     });
     if (!items.length){
