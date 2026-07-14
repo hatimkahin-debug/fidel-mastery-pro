@@ -62,6 +62,7 @@
     <button class="segBtn active" data-f="all">All</button>
     <button class="segBtn" data-f="requests">Requests</button>
     <button class="segBtn" data-f="questions">Questions</button>
+    <button class="segBtn" data-f="connectors">Connectors</button>
     <button class="segBtn" data-f="mastered">★ Mastered</button>
   </div>
 
@@ -93,7 +94,12 @@
     { en:"How much is this?", am:"ይሄ ስንት ነው?", ph:"Yihe sint new?", cat:"questions" },
     { en:"Who is calling?", am:"ማን እየደወለ ነው?", ph:"Man iyedewele new?", cat:"questions" },
     { en:"Why are you here?", am:"ለምን እዚህ ነህ?", ph:"Lemin izih neh?", cat:"questions" },
-    { en:"When will you start?", am:"መቼ ትጀምራለህ?", ph:"Meche tijemiraleh?", cat:"questions" }
+    { en:"When will you start?", am:"መቼ ትጀምራለህ?", ph:"Meche tijemiraleh?", cat:"questions" },
+    { en:"By the way", am:"በነገራችን ላይ", ph:"Benegerachin lay", cat:"connectors" },
+    { en:"In that case", am:"በዚያ ሁኔታ", ph:"Beziya huneta", cat:"connectors" },
+    { en:"At the same time", am:"በተመሳሳይ ጊዜ", ph:"Betemesasay gize", cat:"connectors" },
+    { en:"In the future", am:"ወደፊት", ph:"Wedefit", cat:"connectors" },
+    { en:"Right now", am:"ልክ አሁን", ph:"Lik ahun", cat:"connectors" }
   ];
 
   const list = document.getElementById('list');
@@ -130,7 +136,7 @@
     list.innerHTML = '';
     const items = PHRASES.filter(function(p){
       if (filter === 'mastered') return isMastered(phraseId(p));
-      if (filter === 'requests' || filter === 'questions') return p.cat === filter;
+      if (filter === 'requests' || filter === 'questions' || filter === 'connectors') return p.cat === filter;
       return true;
     });
     if (!items.length){
