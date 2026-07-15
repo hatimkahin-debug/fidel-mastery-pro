@@ -56,13 +56,19 @@
 <body>
 <div id="wrap">
   <h1>Essential Phrases</h1>
-  <div class="sub">Common requests ("verb + -ኝ/me") and getting-to-know-you questions — filter below to focus on one set.</div>
+  <div class="sub">Requests, questions, connectors, everyday practice, greetings, numbers, family, food, and emotions — filter below to focus on one set.</div>
 
   <div class="segwrap">
     <button class="segBtn active" data-f="all">All</button>
     <button class="segBtn" data-f="requests">Requests</button>
     <button class="segBtn" data-f="questions">Questions</button>
     <button class="segBtn" data-f="connectors">Connectors</button>
+    <button class="segBtn" data-f="practice">Practice</button>
+    <button class="segBtn" data-f="greetings">Greetings</button>
+    <button class="segBtn" data-f="numbers">Numbers</button>
+    <button class="segBtn" data-f="family">Family</button>
+    <button class="segBtn" data-f="food">Food</button>
+    <button class="segBtn" data-f="emotions">Emotions</button>
     <button class="segBtn" data-f="mastered">★ Mastered</button>
   </div>
 
@@ -99,7 +105,66 @@
     { en:"In that case", am:"በዚያ ሁኔታ", ph:"Beziya huneta", cat:"connectors" },
     { en:"At the same time", am:"በተመሳሳይ ጊዜ", ph:"Betemesasay gize", cat:"connectors" },
     { en:"In the future", am:"ወደፊት", ph:"Wedefit", cat:"connectors" },
-    { en:"Right now", am:"ልክ አሁን", ph:"Lik ahun", cat:"connectors" }
+    { en:"Right now", am:"ልክ አሁን", ph:"Lik ahun", cat:"connectors" },
+    { en:"Did you eat food?", am:"ምግብ በላህ?", ph:"Migib belah?", cat:"practice" },
+    { en:"I am very hungry.", am:"በጣም ራበኝ።", ph:"Betam rabegn.", cat:"practice" },
+    { en:"I am feeling sleepy.", am:"እንቅልፍ እያመጣኝ ነው።", ph:"Inqilf iyametagn new.", cat:"practice" },
+    { en:"When will you come?", am:"መቼ ትመጣለህ?", ph:"Meche timetaleh?", cat:"practice" },
+    { en:"I am on the way.", am:"በመንገድ ላይ ነኝ።", ph:"Bemenged lay negn.", cat:"practice" },
+    { en:"Come back soon.", am:"በፍጥነት ተመለስ።", ph:"Befitinet temeles.", cat:"practice" },
+    { en:"I didn't understand this", am:"ይህን አልተረዳሁም", ph:"Yihin alteredahum", cat:"practice" },
+    { en:"Speak a little slowly", am:"ትንሽ ቀስ ብለህ ተናገር", ph:"Tinish qes bileh tenager", cat:"practice" },
+    { en:"Listen to me carefully", am:"በጥንቃቄ አዳምጠኝ", ph:"Bet'inqaqe adamt'egn", cat:"practice" },
+    { en:"I want to tell you something.", am:"አንድ ነገር ልነግርህ እፈልጋለሁ።", ph:"And neger linegirih ifeligalehu.", cat:"practice" },
+
+    { en:"Hello", am:"ሰላም", ph:"Selam", cat:"greetings" },
+    { en:"Good morning", am:"ደህና አደርክ?", ph:"Dehna aderk?", cat:"greetings" },
+    { en:"How are you?", am:"እንዴት ነህ?", ph:"Indet neh?", cat:"greetings" },
+    { en:"I'm fine, thank you", am:"ደህና ነኝ፣ አመሰግናለሁ", ph:"Dehna negn, amesegenalehu", cat:"greetings" },
+    { en:"Goodbye", am:"ደህና ሁን", ph:"Dehna hun", cat:"greetings" },
+    { en:"See you later", am:"ቆየት ብለን እንገናኝ", ph:"Qoyet bilen inegenagn", cat:"greetings" },
+    { en:"Nice to meet you", am:"ስለተዋወቅን ደስ ብሎኛል", ph:"Siletewaweqin des bilogn al", cat:"greetings" },
+    { en:"Welcome", am:"እንኳን ደህና መጣህ", ph:"Enkuan dehna metah", cat:"greetings" },
+    { en:"Good night", am:"መልካም እንቅልፍ", ph:"Melkam inqilf", cat:"greetings" },
+    { en:"Thank you", am:"አመሰግናለሁ", ph:"Amesegenalehu", cat:"greetings" },
+
+    { en:"One", am:"አንድ", ph:"And", cat:"numbers" },
+    { en:"Two", am:"ሁለት", ph:"Hulet", cat:"numbers" },
+    { en:"Three", am:"ሶስት", ph:"Sost", cat:"numbers" },
+    { en:"Four", am:"አራት", ph:"Arat", cat:"numbers" },
+    { en:"Five", am:"አምስት", ph:"Amist", cat:"numbers" },
+    { en:"Six", am:"ስድስት", ph:"Sidist", cat:"numbers" },
+    { en:"Seven", am:"ሰባት", ph:"Sebat", cat:"numbers" },
+    { en:"Eight", am:"ስምንት", ph:"Siminit", cat:"numbers" },
+    { en:"Nine", am:"ዘጠኝ", ph:"Zetegn", cat:"numbers" },
+    { en:"Ten", am:"አስር", ph:"Asir", cat:"numbers" },
+
+    { en:"Mother", am:"እናት", ph:"Enat", cat:"family" },
+    { en:"Father", am:"አባት", ph:"Abat", cat:"family" },
+    { en:"Brother", am:"ወንድም", ph:"Wendim", cat:"family" },
+    { en:"Sister", am:"እህት", ph:"Ehit", cat:"family" },
+    { en:"Son", am:"ወንድ ልጅ", ph:"Wend lij", cat:"family" },
+    { en:"Daughter", am:"ሴት ልጅ", ph:"Set lij", cat:"family" },
+    { en:"Husband", am:"ባል", ph:"Bal", cat:"family" },
+    { en:"Wife", am:"ሚስት", ph:"Mist", cat:"family" },
+    { en:"Friend", am:"ጓደኛ", ph:"Gwadegna", cat:"family" },
+
+    { en:"Water", am:"ውሃ", ph:"Wiha", cat:"food" },
+    { en:"Food", am:"ምግብ", ph:"Migib", cat:"food" },
+    { en:"Bread", am:"ዳቦ", ph:"Dabo", cat:"food" },
+    { en:"I am thirsty", am:"ተጠማኝ", ph:"Tet'emagn", cat:"food" },
+    { en:"The bill, please", am:"ሂሳቡን እባክህ", ph:"Hisabun ebakih", cat:"food" },
+    { en:"I am full", am:"ጠግቤያለሁ", ph:"T'egibeyalehu", cat:"food" },
+    { en:"Coffee", am:"ቡና", ph:"Buna", cat:"food" },
+    { en:"Let's eat", am:"እንብላ", ph:"Inbila", cat:"food" },
+
+    { en:"Happy", am:"ደስተኛ ነኝ", ph:"Destegna negn", cat:"emotions" },
+    { en:"Sad", am:"አዝኛለሁ", ph:"Azinyalehu", cat:"emotions" },
+    { en:"Angry", am:"ተናድጃለሁ", ph:"Tenadijalehu", cat:"emotions" },
+    { en:"Tired", am:"ደክሞኛል", ph:"Dekmognal", cat:"emotions" },
+    { en:"Scared", am:"ፈርቻለሁ", ph:"Ferichalehu", cat:"emotions" },
+    { en:"I love you", am:"እወድሃለሁ", ph:"Iwedihalehu", cat:"emotions" },
+    { en:"I miss you", am:"ናፍቀኸኛል", ph:"Nafiqehegnal", cat:"emotions" }
   ];
 
   const list = document.getElementById('list');
@@ -135,9 +200,9 @@
   function render(){
     list.innerHTML = '';
     const items = PHRASES.filter(function(p){
+      if (filter === 'all') return true;
       if (filter === 'mastered') return isMastered(phraseId(p));
-      if (filter === 'requests' || filter === 'questions' || filter === 'connectors') return p.cat === filter;
-      return true;
+      return p.cat === filter;
     });
     if (!items.length){
       list.innerHTML = '<div style="text-align:center; color:var(--dim); font-size:13px; padding:30px 10px;">No mastered phrases yet — star some below.</div>';
